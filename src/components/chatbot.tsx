@@ -1,9 +1,9 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,13 +21,18 @@ const examplePrompts = [
     { title: "Compare two stocks", prompt: "Compare the performance of GOOGL and TSLA over the last quarter." }
 ]
 
-// Helper to generate unique IDs for messages
 const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const handleInitialMessage = () => {
+      setMessages([
+          { id: generateUniqueId(), text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' }
+      ]);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,20 +41,14 @@ export default function Chatbot() {
   const handleSend = (prompt?: string) => {
     const textToSend = prompt || input;
     if (textToSend.trim() === '') return;
-    
+
     const userMessage: Message = { id: generateUniqueId(), text: textToSend, sender: 'user' };
-    
+
     setMessages(prev => {
-        const newMessages = [...prev, userMessage];
-        // If this is the first user message, add the initial bot message
-        if (prev.length === 0) {
-            const initialBotMessage: Message = { id: generateUniqueId(), text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' };
-            newMessages.push(initialBotMessage);
-        }
-        return newMessages;
+        const currentMessages = prev.length > 0 ? prev : [{ id: generateUniqueId(), text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' }];
+        return [...currentMessages, userMessage];
     });
-    
-    // Simulate bot response after a delay
+
     setTimeout(() => {
       const botResponse: Message = { id: generateUniqueId(), text: `I am currently in a read-only mode. I received your message: "${textToSend}"`, sender: 'bot' };
       setMessages(prev => [...prev, botResponse]);
@@ -79,22 +78,10 @@ export default function Chatbot() {
         ) : (
           <div className="space-y-6">
             {messages.map((message) => (
-              <div key={message.id} className={cn('flex items-start gap-4', message.sender === 'user' ? 'justify-end' : '')}>
-                {message.sender === 'bot' && (
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src="https://picsum.photos/40/40" alt="Vestara" data-ai-hint="female robot" />
-                    <AvatarFallback>V</AvatarFallback>
-                  </Avatar>
-                )}
+              <div key={message.id} className={cn('flex', message.sender === 'user' ? 'justify-end' : 'justify-start')}>
                 <div className={cn('rounded-lg px-4 py-3 max-w-[80%]', message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
                 </div>
-                 {message.sender === 'user' && (
-                  <Avatar className="h-9 w-9">
-                     <AvatarImage src="https://picsum.photos/40/40" alt="User" data-ai-hint="person silhouette" />
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                )}
               </div>
             ))}
              <div ref={messagesEndRef} />
