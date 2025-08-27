@@ -1,13 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Activity, DollarSign, Building2 } from "lucide-react";
+import { TrendingUp, Activity, DollarSign, Building2, BrainCircuit, Scale } from "lucide-react";
 import AnimatedHero from "./animated-hero";
 
 export default function Homepage() {
-  const sectors = [
-    { name: "Technology", icon: <Activity className="h-8 w-8 text-primary" />, change: "+1.2%", color: "text-success" },
-    { name: "Finance", icon: <DollarSign className="h-8 w-8 text-primary" />, change: "-0.5%", color: "text-danger" },
-    { name: "Real Estate", icon: <Building2 className="h-8 w-8 text-primary" />, change: "+0.8%", color: "text-success" },
-    { name: "S&P 500", icon: <TrendingUp className="h-8 w-8 text-primary" />, change: "+0.9%", color: "text-success" },
+  const features = [
+    { name: "Regulatory LLM", icon: <Scale className="h-8 w-8 text-primary" />, description: "Navigate Nepal's complex financial regulations with an AI-powered legal co-pilot." },
+    { name: "Predictive Analytics", icon: <BrainCircuit className="h-8 w-8 text-primary" />, description: "Leverage deep learning models to forecast market trends with unprecedented accuracy." },
+    { name: "Data Transparency", icon: <Activity className="h-8 w-8 text-primary" />, description: "Bring clarity to an opaque market with data-driven insights and sentiment analysis." },
+    { name: "Market Intelligence", icon: <TrendingUp className="h-8 w-8 text-primary" />, description: "Democratize access to institutional-grade predictive intelligence for all." },
   ];
 
   return (
@@ -18,44 +18,43 @@ export default function Homepage() {
             <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tighter text-white">
                 Vestara
             </h1>
-            <p className="text-lg md:text-xl text-gray-200 max-w-2xl">
-                Harnessing the power of predictive analytics to illuminate your path in the stock market. Your sultry muse for market insights.
+            <p className="text-lg md:text-xl text-gray-200 max-w-3xl">
+                Pioneering the convergence of AI, regulation, and finance to build the foundational intelligence layer for Nepal's emerging financial ecosystem.
             </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-5xl">
-        {sectors.map((sector) => (
-          <Card key={sector.name} className="text-left hover:shadow-lg transition-shadow">
+        {features.map((feature) => (
+          <Card key={feature.name} className="text-left hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{sector.name}</CardTitle>
-              {sector.icon}
+              <CardTitle className="text-sm font-medium">{feature.name}</CardTitle>
+              {feature.icon}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Market Overview</div>
-              <p className={`text-xs ${sector.color}`}>{sector.change} from yesterday</p>
+              <p className="text-sm text-muted-foreground">{feature.description}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <div className="mt-16 w-full max-w-5xl text-left">
-          <h2 className="text-3xl font-bold font-headline mb-6 text-center">Our Mission</h2>
+          <h2 className="text-3xl font-bold font-headline mb-6 text-center">The Mandate</h2>
           <div className="grid md:grid-cols-2 gap-8">
             <Card>
                 <CardHeader>
-                    <CardTitle>Clarity in Complexity</CardTitle>
+                    <CardTitle>Architecting Market Integrity</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">We decode market complexities into actionable insights, providing clear, data-driven predictions to guide your investment decisions. Our goal is to make sophisticated market analysis accessible to everyone.</p>
+                    <p className="text-muted-foreground">Vestara is not just an application; it is an intervention. In a financial landscape defined by opacity, we are deploying a regulatory-intelligent LLM to bring unprecedented clarity and compliance. This is the first step toward engineering a more transparent, equitable, and efficient market for Nepal.</p>
                 </CardContent>
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle>Future-Forward Finance</CardTitle>
+                    <CardTitle>Forecasting the Future</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">By leveraging state-of-the-art AI, we aim to be at the forefront of financial technology. We continuously train and refine our models to deliver predictions with the highest possible accuracy.</p>
+                    <p className="text-muted-foreground">Beyond compliance, Vestara's predictive suite moves from interpretation to anticipation. By fusing advanced AI models with market sentiment, we provide the forward-looking intelligence required to navigate volatility. We are building the engine for the next generation of financial decision-making.</p>
                 </CardContent>
             </Card>
           </div>

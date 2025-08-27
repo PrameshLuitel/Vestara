@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Message {
   id: string;
@@ -15,10 +15,10 @@ interface Message {
 }
 
 const examplePrompts = [
-    { title: "Predict Apple's stock", prompt: "What is the prediction for AAPL?" },
-    { title: "Analyze market trends", prompt: "Show me trending tech stocks." },
-    { title: "Explain a financial term", prompt: "What is a 'moving average'?" },
-    { title: "Compare two stocks", prompt: "Compare the performance of GOOGL and TSLA over the last quarter." }
+    { title: "Query Financial Regulations", prompt: "Explain the liquidity requirements for commercial banks in Nepal." },
+    { title: "Analyze Market Indices", prompt: "What is the sentiment-adjusted forecast for the NEPSE index?" },
+    { title: "Define a Compliance Term", prompt: "What constitutes 'insider trading' under Nepalese securities law?" },
+    { title: "Compare Sector Performance", prompt: "Compare the 10-day volatility forecast for the Banking vs. Hydropower sub-indices." }
 ]
 
 const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -27,12 +27,6 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const handleInitialMessage = () => {
-      setMessages([
-          { id: generateUniqueId(), text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' }
-      ]);
-  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,12 +39,12 @@ export default function Chatbot() {
     const userMessage: Message = { id: generateUniqueId(), text: textToSend, sender: 'user' };
 
     setMessages(prev => {
-        const currentMessages = prev.length > 0 ? prev : [{ id: generateUniqueId(), text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' }];
+        const currentMessages = prev.length > 0 ? prev : [{ id: generateUniqueId(), text: "I am Vestara, your regulatory and market intelligence co-pilot for Nepal's financial markets. How can I assist you?", sender: 'bot' }];
         return [...currentMessages, userMessage];
     });
 
     setTimeout(() => {
-      const botResponse: Message = { id: generateUniqueId(), text: `I am currently in a read-only mode. I received your message: "${textToSend}"`, sender: 'bot' };
+      const botResponse: Message = { id: generateUniqueId(), text: `This interface is a demonstration. Your query received: "${textToSend}"`, sender: 'bot' };
       setMessages(prev => [...prev, botResponse]);
     }, 1000);
 
@@ -63,10 +57,10 @@ export default function Chatbot() {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <h1 className="text-4xl font-bold font-headline mb-2">Vestara Gpt</h1>
-            <p className="text-muted-foreground mb-8">Your AI-powered market analysis partner.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
+            <p className="text-muted-foreground mb-8">An AI co-pilot for Nepal's financial ecosystem.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
                 {examplePrompts.map(ex => (
-                    <Card key={ex.title} className="hover:bg-accent transition-colors cursor-pointer" onClick={() => handleSend(ex.prompt)}>
+                    <Card key={ex.title} className="hover:bg-accent transition-colors cursor-pointer text-left" onClick={() => handleSend(ex.prompt)}>
                         <CardHeader>
                             <CardTitle className="text-base">{ex.title}</CardTitle>
                             <CardDescription className="text-sm">{ex.prompt}</CardDescription>
@@ -93,7 +87,7 @@ export default function Chatbot() {
           <Input
             className="w-full h-12 pr-12 rounded-full"
             type="text"
-            placeholder="Ask Vestara about the market..."
+            placeholder="Query Nepal's financial regulations and markets..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />
