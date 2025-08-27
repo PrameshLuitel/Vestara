@@ -10,9 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
-        code: ['monospace'],
+        body: ['Open Sans', 'sans-serif'],
+        headline: ['Roboto', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -65,6 +64,8 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        success: 'hsl(var(--chart-1))',
+        danger: 'hsl(var(--chart-2))',
       },
       borderRadius: {
         lg: 'var(--radius)',
