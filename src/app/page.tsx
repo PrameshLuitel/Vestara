@@ -1,7 +1,7 @@
 import Header from '@/components/header';
 import Homepage from '@/components/homepage';
 import PredictiveSuite from '@/components/predictive-suite';
-import Chatbot from '@/components/chatbot';
+import VestaraGpt from '@/components/vestara-gpt';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
@@ -15,7 +15,7 @@ export default function Home() {
               <TabsList className="grid w-full max-w-md grid-cols-3">
                 <TabsTrigger value="home">Home</TabsTrigger>
                 <TabsTrigger value="predictive-suite">Predictive Suite</TabsTrigger>
-                <TabsTrigger value="chatbot">Chatbot</TabsTrigger>
+                <TabsTrigger value="vestara-gpt">Vestara Gpt</TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="home">
@@ -24,8 +24,8 @@ export default function Home() {
             <TabsContent value="predictive-suite">
               <PredictiveSuite />
             </TabsContent>
-            <TabsContent value="chatbot">
-              <Chatbot />
+            <TabsContent value="vestara-gpt">
+              <VestaraGpt />
             </TabsContent>
           </Tabs>
         </div>
