@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Message {
   id: number;
@@ -15,30 +14,36 @@ interface Message {
   sender: 'user' | 'bot';
 }
 
+const examplePrompts = [
+    { title: "Predict Apple's stock", prompt: "What is the prediction for AAPL?" },
+    { title: "Analyze market trends", prompt: "Show me trending tech stocks." },
+    { title: "Explain a financial term", prompt: "What is a 'moving average'?" },
+    { title: "Compare two stocks", prompt: "Compare the performance of GOOGL and TSLA over the last quarter." }
+]
+
 export default function Chatbot() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' },
-    { id: 2, text: "For example, you can ask 'What is the prediction for AAPL?' or 'Show me trending tech stocks.'", sender: 'bot' }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-        const viewport = scrollAreaRef.current.querySelector('div');
-        if (viewport) {
-            viewport.scrollTop = viewport.scrollHeight;
-        }
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = () => {
-    if (input.trim() === '') return;
-    const userMessage: Message = { id: Date.now(), text: input, sender: 'user' };
+  const handleSend = (prompt?: string) => {
+    const textToSend = prompt || input;
+    if (textToSend.trim() === '') return;
+    
+    const userMessage: Message = { id: Date.now(), text: textToSend, sender: 'user' };
     setMessages(prev => [...prev, userMessage]);
 
+    if (messages.length === 0) {
+        const initialBotMessage: Message = { id: Date.now() + 1, text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' };
+        setMessages(prev => [...prev, userMessage, initialBotMessage]);
+    }
+
     setTimeout(() => {
-      const botResponse: Message = { id: Date.now() + 1, text: `I am currently in a read-only mode. I received your message: "${input}"`, sender: 'bot' };
+      const botResponse: Message = { id: Date.now() + 2, text: `I am currently in a read-only mode. I received your message: "${textToSend}"`, sender: 'bot' };
       setMessages(prev => [...prev, botResponse]);
     }, 1000);
 
@@ -46,50 +51,62 @@ export default function Chatbot() {
   };
 
   return (
-    <div className="flex justify-center">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <h2 className="text-xl font-semibold font-headline">Chat with Vestara</h2>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[400px] w-full pr-4" ref={scrollAreaRef}>
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div key={message.id} className={cn('flex items-start gap-3', message.sender === 'user' ? 'justify-end' : '')}>
-                  {message.sender === 'bot' && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://picsum.photos/40/40" alt="Vestara" data-ai-hint="female robot" />
-                      <AvatarFallback>V</AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div className={cn('rounded-lg px-4 py-2 max-w-[75%]', message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                    <p className="text-sm">{message.text}</p>
-                  </div>
-                   {message.sender === 'user' && (
-                    <Avatar className="h-8 w-8">
-                       <AvatarImage src="https://picsum.photos/40/40" alt="User" data-ai-hint="person silhouette" />
-                      <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
-              ))}
+    <div className="flex flex-col h-[70vh] max-w-4xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto pr-4">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <h1 className="text-4xl font-bold font-headline mb-2">Vestara Gpt</h1>
+            <p className="text-muted-foreground mb-8">Your AI-powered market analysis partner.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
+                {examplePrompts.map(ex => (
+                    <Card key={ex.title} className="hover:bg-accent transition-colors cursor-pointer" onClick={() => handleSend(ex.prompt)}>
+                        <CardHeader>
+                            <CardTitle className="text-base">{ex.title}</CardTitle>
+                            <CardDescription className="text-sm">{ex.prompt}</CardDescription>
+                        </CardHeader>
+                    </Card>
+                ))}
             </div>
-          </ScrollArea>
-        </CardContent>
-        <CardFooter>
-          <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex w-full items-center space-x-2">
-            <Input
-              type="text"
-              placeholder="Ask about stock predictions..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-            />
-            <Button type="submit">
-              Send <Send className="ml-2 h-4 w-4" />
-            </Button>
-          </form>
-        </CardFooter>
-      </Card>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {messages.map((message) => (
+              <div key={message.id} className={cn('flex items-start gap-4', message.sender === 'user' ? 'justify-end' : '')}>
+                {message.sender === 'bot' && (
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src="https://picsum.photos/40/40" alt="Vestara" data-ai-hint="female robot" />
+                    <AvatarFallback>V</AvatarFallback>
+                  </Avatar>
+                )}
+                <div className={cn('rounded-lg px-4 py-3 max-w-[80%]', message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+                </div>
+                 {message.sender === 'user' && (
+                  <Avatar className="h-9 w-9">
+                     <AvatarImage src="https://picsum.photos/40/40" alt="User" data-ai-hint="person silhouette" />
+                    <AvatarFallback>U</AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ))}
+             <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
+      <div className="mt-6">
+        <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="relative">
+          <Input
+            className="w-full h-12 pr-12 rounded-full"
+            type="text"
+            placeholder="Ask Vestara about the market..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full">
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
