@@ -12,9 +12,9 @@ export default function Homepage() {
 
   return (
     <div className="flex flex-col items-center text-center p-4">
-      <div className="relative w-full max-w-5xl mx-auto mb-12 p-4 min-h-[30vh] bg-background/50 backdrop-blur-sm rounded-lg overflow-hidden">
+      <div className="relative w-full max-w-5xl mx-auto mb-12 min-h-[30vh] flex items-center justify-center">
         <AnimatedHero />
-        <div className="relative z-10 flex flex-col items-center justify-center text-center h-full">
+        <div className="relative z-10 flex flex-col items-center justify-center text-center h-full p-8 bg-background/50 backdrop-blur-sm rounded-lg">
             <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tighter text-foreground">
                 Vestara
             </h1>
