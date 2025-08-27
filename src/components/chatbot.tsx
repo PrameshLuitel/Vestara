@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
   sender: 'user' | 'bot';
 }
@@ -20,6 +20,9 @@ const examplePrompts = [
     { title: "Explain a financial term", prompt: "What is a 'moving average'?" },
     { title: "Compare two stocks", prompt: "Compare the performance of GOOGL and TSLA over the last quarter." }
 ]
+
+// Helper to generate unique IDs for messages
+const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,16 +37,21 @@ export default function Chatbot() {
     const textToSend = prompt || input;
     if (textToSend.trim() === '') return;
     
-    const userMessage: Message = { id: Date.now(), text: textToSend, sender: 'user' };
-    setMessages(prev => [...prev, userMessage]);
-
-    if (messages.length === 0) {
-        const initialBotMessage: Message = { id: Date.now() + 1, text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' };
-        setMessages(prev => [...prev, userMessage, initialBotMessage]);
-    }
-
+    const userMessage: Message = { id: generateUniqueId(), text: textToSend, sender: 'user' };
+    
+    setMessages(prev => {
+        const newMessages = [...prev, userMessage];
+        // If this is the first user message, add the initial bot message
+        if (prev.length === 0) {
+            const initialBotMessage: Message = { id: generateUniqueId(), text: "Hello! I'm Vestara, your market muse. How can I help you with stock predictions today?", sender: 'bot' };
+            newMessages.push(initialBotMessage);
+        }
+        return newMessages;
+    });
+    
+    // Simulate bot response after a delay
     setTimeout(() => {
-      const botResponse: Message = { id: Date.now() + 2, text: `I am currently in a read-only mode. I received your message: "${textToSend}"`, sender: 'bot' };
+      const botResponse: Message = { id: generateUniqueId(), text: `I am currently in a read-only mode. I received your message: "${textToSend}"`, sender: 'bot' };
       setMessages(prev => [...prev, botResponse]);
     }, 1000);
 
