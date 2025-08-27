@@ -96,18 +96,6 @@ const AnimatedHero = () => {
     };
     init();
 
-    const animate = () => {
-        if(!ctx) return;
-        ctx.clearRect(0, 0, w, h);
-        particles.forEach(p => {
-            p.update();
-            p.draw();
-        });
-        connect();
-        requestAnimationFrame(animate);
-    }
-    animate();
-
     const connect = () => {
         if(!ctx) return;
         let opacityValue = 1;
@@ -127,6 +115,18 @@ const AnimatedHero = () => {
             }
         }
     }
+
+    const animate = () => {
+        if(!ctx) return;
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        connect();
+        requestAnimationFrame(animate);
+    }
+    animate();
 
     return () => {
         window.removeEventListener('mousemove', handleMouseMove);
