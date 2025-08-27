@@ -6,13 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
   return (
-    <div 
-      className="flex flex-col min-h-screen bg-background"
-      style={{
-          backgroundImage: 'radial-gradient(circle at top left, hsla(210, 80%, 30%, 0.3), transparent 30%), radial-gradient(circle at bottom right, hsla(140, 70%, 40%, 0.3), transparent 30%)',
-          backgroundAttachment: 'fixed'
-      }}
-    >
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <div className="flex-1">
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">

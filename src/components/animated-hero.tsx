@@ -47,7 +47,7 @@ const AnimatedHero = () => {
         this.baseX = x;
         this.baseY = y;
         this.density = (Math.random() * 30) + 1;
-        this.color = theme === 'dark' ? 'hsla(0, 0%, 80%, 0.8)' : 'hsla(222.2, 84%, 4.9%, 0.5)';
+        this.color = theme === 'dark' ? 'hsla(0, 0%, 80%, 0.8)' : 'hsla(0, 0%, 50%, 0.5)';
       }
 
       draw() {
@@ -110,8 +110,8 @@ const AnimatedHero = () => {
                 if (distance < connectDistance) {
                     opacityValue = 1 - (distance/20000);
                     const strokeColor = theme === 'dark' 
-                        ? 'hsla(210, 40%, 90%, ' + opacityValue + ')' 
-                        : 'hsla(221.2, 83.2%, 53.3%, ' + opacityValue * 0.5 + ')';
+                        ? 'hsla(0, 0%, 90%, ' + opacityValue + ')' 
+                        : 'hsla(0, 0%, 50%, ' + opacityValue * 0.5 + ')';
                     ctx.strokeStyle = strokeColor;
                     ctx.lineWidth = 0.5;
                     ctx.beginPath();
