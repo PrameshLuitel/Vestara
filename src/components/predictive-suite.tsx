@@ -1,65 +1,73 @@
+
 "use client"
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-const mockData = {
-  AAPL: {
-    price: "172.25",
-    change: "+1.50 (0.88%)",
-    changeType: "up",
-    data: [
-      { date: 'Day 1', historic: 155 }, { date: 'Day 2', historic: 156 }, { date: 'Day 3', historic: 154 },
-      { date: 'Day 4', historic: 158 }, { date: 'Day 5', historic: 160 }, { date: 'Day 6', historic: 159 },
-      { date: 'Day 7', historic: 162 }, { date: 'Day 8', historic: 161 }, { date: 'Day 9', historic: 163 },
-      { date: 'Day 10', historic: 165 }, { date: 'Day 11', historic: 164 }, { date: 'Day 12', historic: 166 },
-      { date: 'Day 13', historic: 168 }, { date: 'Day 14', historic: 167 }, { date: 'Day 15', historic: 169 },
-      { date: 'Day 16', historic: 170 }, { date: 'Day 17', historic: 172 }, { date: 'Day 18', historic: 171 },
-      { date: 'Day 19', historic: 173 }, { date: 'Day 20', historic: 174, predicted: 174 }, { date: 'Day 21', predicted: 175 },
-      { date: 'Day 22', predicted: 176 }, { date: 'Day 23', predicted: 174 }, { date: 'Day 24', predicted: 177 },
-      { date: 'Day 25', predicted: 178 }, { date: 'Day 26', predicted: 179 }, { date: 'Day 27', predicted: 178 },
-      { date: 'Day 28', predicted: 180 }, { date: 'Day 29', predicted: 181 }, { date: 'Day 30', predicted: 182 },
-    ],
-  },
-  GOOGL: {
-    price: "135.60",
-    change: "-0.75 (0.55%)",
-    changeType: "down",
-    data: [
-      { date: 'Day 1', historic: 125 }, { date: 'Day 2', historic: 126 }, { date: 'Day 3', historic: 124 },
-      { date: 'Day 4', historic: 128 }, { date: 'Day 5', historic: 130 }, { date: 'Day 6', historic: 129 },
-      { date: 'Day 7', historic: 132 }, { date: 'Day 8', historic: 131 }, { date: 'Day 9', historic: 133 },
-      { date: 'Day 10', historic: 135 }, { date: 'Day 11', historic: 134 }, { date: 'Day 12', historic: 136 },
-      { date: 'Day 13', historic: 138 }, { date: 'Day 14', historic: 137 }, { date: 'Day 15', historic: 139 },
-      { date: 'Day 16', historic: 140 }, { date: 'Day 17', historic: 138 }, { date: 'Day 18', historic: 137 },
-      { date: 'Day 19', historic: 136 }, { date: 'Day 20', historic: 135, predicted: 135 }, { date: 'Day 21', predicted: 134 },
-      { date: 'Day 22', predicted: 133 }, { date: 'Day 23', predicted: 132 }, { date: 'Day 24', predicted: 131 },
-      { date: 'Day 25', predicted: 130 }, { date: 'Day 26', predicted: 129 }, { date: 'Day 27', predicted: 128 },
-      { date: 'Day 28', predicted: 127 }, { date: 'Day 29', predicted: 126 }, { date: 'Day 30', predicted: 125 },
-    ],
-  },
-  TSLA: {
-    price: "177.46",
-    change: "+0.10 (0.06%)",
-    changeType: "neutral",
-    data: [
-        { date: 'Day 1', historic: 160 }, { date: 'Day 2', historic: 162 }, { date: 'Day 3', historic: 158 },
-        { date: 'Day 4', historic: 165 }, { date: 'Day 5', historic: 170 }, { date: 'Day 6', historic: 168 },
-        { date: 'Day 7', historic: 172 }, { date: 'Day 8', historic: 171 }, { date: 'Day 9', historic: 175 },
-        { date: 'Day 10', historic: 178 }, { date: 'Day 11', historic: 176 }, { date: 'Day 12', historic: 174 },
-        { date: 'Day 13', historic: 172 }, { date: 'Day 14', historic: 170 }, { date: 'Day 15', historic: 173 },
-        { date: 'Day 16', historic: 175 }, { date: 'Day 17', historic: 177 }, { date: 'Day 18', historic: 176 },
-        { date: 'Day 19', historic: 178 }, { date: 'Day 20', historic: 177, predicted: 177 }, { date: 'Day 21', predicted: 178 },
-        { date: 'Day 22', predicted: 176 }, { date: 'Day 23', predicted: 179 }, { date: 'Day 24', predicted: 180 },
-        { date: 'Day 25', predicted: 178 }, { date: 'Day 26', predicted: 181 }, { date: 'Day 27', predicted: 182 },
-        { date: 'Day 28', predicted: 180 }, { date: 'Day 29', predicted: 183 }, { date: 'Day 30', predicted: 184 },
-    ],
-  },
+const generateData = (base: number) => {
+    let data = [];
+    let value = base;
+    for (let i = 1; i <= 20; i++) {
+        data.push({ date: `Day ${i}`, historic: value });
+        value += Math.random() * 4 - 2;
+    }
+    data.push({ date: 'Day 20', predicted: value });
+    for (let i = 21; i <= 30; i++) {
+        data.push({ date: `Day ${i}`, predicted: value });
+        value += Math.random() * 4 - 2;
+    }
+    return data;
 };
+
+const mockModelData = {
+    LSTM: {
+        AAPL: { price: "172.50", change: "+1.75 (1.02%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "135.80", change: "-0.55 (0.40%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.60", change: "+0.24 (0.14%)", changeType: "neutral", data: generateData(160) },
+    },
+    Prophet: {
+        AAPL: { price: "172.45", change: "+1.70 (1.00%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "135.70", change: "-0.65 (0.48%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.50", change: "+0.14 (0.08%)", changeType: "neutral", data: generateData(160) },
+    },
+    XGBoost: {
+        AAPL: { price: "172.30", change: "+1.55 (0.91%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "135.90", change: "-0.45 (0.33%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.70", change: "+0.34 (0.19%)", changeType: "up", data: generateData(160) },
+    },
+    LightGBM: {
+        AAPL: { price: "172.60", change: "+1.85 (1.08%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "135.50", change: "-0.85 (0.62%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.40", change: "+0.04 (0.02%)", changeType: "neutral", data: generateData(160) },
+    },
+    TCN: {
+        AAPL: { price: "172.20", change: "+1.45 (0.85%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "136.00", change: "-0.35 (0.26%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.80", change: "+0.44 (0.25%)", changeType: "up", data: generateData(160) },
+    },
+    AutoML: {
+        AAPL: { price: "172.10", change: "+1.35 (0.79%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "136.10", change: "-0.25 (0.18%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.90", change: "+0.54 (0.30%)", changeType: "up", data: generateData(160) },
+    },
+    "Random Forest": {
+        AAPL: { price: "172.05", change: "+1.30 (0.76%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "136.15", change: "-0.20 (0.15%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.95", change: "+0.59 (0.33%)", changeType: "up", data: generateData(160) },
+    },
+    DQN: {
+        AAPL: { price: "172.80", change: "+2.05 (1.20%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "135.30", change: "-1.05 (0.77%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.20", change: "-0.16 (0.09%)", changeType: "down", data: generateData(160) },
+    },
+};
+
+type ModelName = keyof typeof mockModelData;
 
 const chartConfig = {
     historic: {
@@ -72,72 +80,95 @@ const chartConfig = {
     },
 };
 
+
+const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] }) => {
+    const [selectedStock, setSelectedStock] = useState("AAPL");
+    const stock = modelData[selectedStock as keyof typeof modelData];
+
+    const renderChangeIcon = () => {
+        switch (stock.changeType) {
+        case "up":
+            return <TrendingUp className="h-6 w-6 text-success" />;
+        case "down":
+            return <TrendingDown className="h-6 w-6 text-danger" />;
+        default:
+            return <Minus className="h-6 w-6 text-muted-foreground" />;
+        }
+    };
+
+    return (
+        <div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                 <div className="flex items-baseline gap-4">
+                    <h2 className="text-4xl font-bold">{stock.price}</h2>
+                    <p className={`font-semibold ${stock.changeType === 'up' ? 'text-success' : stock.changeType === 'down' ? 'text-danger' : 'text-muted-foreground'}`}>
+                        {stock.change}
+                    </p>
+                    {renderChangeIcon()}
+                </div>
+                <Select onValueChange={setSelectedStock} defaultValue={selectedStock}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Select a stock" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="AAPL">Apple (AAPL)</SelectItem>
+                        <SelectItem value="GOOGL">Google (GOOGL)</SelectItem>
+                        <SelectItem value="TSLA">Tesla (TSLA)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <ChartContainer config={chartConfig} className="w-full h-[400px]">
+                <AreaChart data={stock.data}
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorHistoric" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--color-historic)" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="var(--color-historic)" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--color-predicted)" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="var(--color-predicted)" stopOpacity={0}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} hide />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Area type="monotone" dataKey="historic" stroke="var(--color-historic)" fillOpacity={1} fill="url(#colorHistoric)" strokeWidth={2} connectNulls />
+                    <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} />
+                </AreaChart>
+            </ChartContainer>
+        </div>
+    );
+};
+
+
 export default function PredictiveSuite() {
-  const [selectedStock, setSelectedStock] = useState("AAPL");
-  const stock = mockData[selectedStock as keyof typeof mockData];
-
-  const renderChangeIcon = () => {
-    switch (stock.changeType) {
-      case "up":
-        return <TrendingUp className="h-6 w-6 text-success" />;
-      case "down":
-        return <TrendingDown className="h-6 w-6 text-danger" />;
-      default:
-        return <Minus className="h-6 w-6 text-muted-foreground" />;
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-                <CardTitle className="font-headline text-2xl">Predictive Analysis</CardTitle>
-                <CardDescription>Historical data and future price predictions.</CardDescription>
-            </div>
-            <Select onValueChange={setSelectedStock} defaultValue={selectedStock}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Select a stock" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="AAPL">Apple (AAPL)</SelectItem>
-                <SelectItem value="GOOGL">Google (GOOGL)</SelectItem>
-                <SelectItem value="TSLA">Tesla (TSLA)</SelectItem>
-              </SelectContent>
-            </Select>
-        </div>
+        <CardTitle className="font-headline text-2xl">Predictive Analysis</CardTitle>
+        <CardDescription>Historical data and future price predictions using various AI models.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-baseline gap-4 mb-6">
-            <h2 className="text-4xl font-bold">{stock.price}</h2>
-            <p className={`font-semibold ${stock.changeType === 'up' ? 'text-success' : stock.changeType === 'down' ? 'text-danger' : 'text-muted-foreground'}`}>
-                {stock.change}
-            </p>
-            {renderChangeIcon()}
-        </div>
-        <ChartContainer config={chartConfig} className="w-full h-[400px]">
-            <AreaChart data={stock.data}
-                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                    <linearGradient id="colorHistoric" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-historic)" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="var(--color-historic)" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-predicted)" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="var(--color-predicted)" stopOpacity={0}/>
-                    </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                <YAxis domain={['dataMin - 10', 'dataMax + 10']} hide />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Legend />
-                <Area type="monotone" dataKey="historic" stroke="var(--color-historic)" fillOpacity={1} fill="url(#colorHistoric)" strokeWidth={2} connectNulls />
-                <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} />
-            </AreaChart>
-        </ChartContainer>
+        <Tabs defaultValue="LSTM" className="w-full">
+          <div className="overflow-x-auto">
+            <TabsList>
+              {Object.keys(mockModelData).map(modelName => (
+                  <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          {Object.entries(mockModelData).map(([modelName, modelData]) => (
+            <TabsContent key={modelName} value={modelName} className="mt-4">
+              <ModelChart modelData={modelData} />
+            </TabsContent>
+          ))}
+        </Tabs>
       </CardContent>
     </Card>
   );
 }
+
+    
