@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const mockData = {
