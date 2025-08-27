@@ -2,9 +2,11 @@
 
 "use client";
 import React, { useEffect, useRef } from 'react';
+import { useTheme } from 'next-themes';
 
 const AnimatedHero = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -45,7 +47,7 @@ const AnimatedHero = () => {
         this.baseX = x;
         this.baseY = y;
         this.density = (Math.random() * 30) + 1;
-        this.color = 'hsla(0, 0%, 80%, 0.8)';
+        this.color = theme === 'dark' ? 'hsla(0, 0%, 80%, 0.8)' : 'hsla(222.2, 84%, 4.9%, 0.5)';
       }
 
       draw() {
@@ -87,7 +89,7 @@ const AnimatedHero = () => {
     let particles: Particle[] = [];
     const init = () => {
       particles = [];
-      const gap = 18;
+      const gap = 20;
       for (let y = 0; y < h; y += gap) {
         for (let x = 0; x < w; x += gap) {
           particles.push(new Particle(x, y));
@@ -103,9 +105,14 @@ const AnimatedHero = () => {
             for (let b = a; b < particles.length; b++) {
                 let distance = ((particles[a].x - particles[b].x) * (particles[a].x - particles[b].x))
                              + ((particles[a].y - particles[b].y) * (particles[a].y - particles[b].y));
-                if (distance < (w/7) * (h/7)) {
+
+                const connectDistance = (w / 7) * (h / 7);
+                if (distance < connectDistance) {
                     opacityValue = 1 - (distance/20000);
-                    ctx.strokeStyle = 'hsla(210, 40%, 90%, ' + opacityValue + ')';
+                    const strokeColor = theme === 'dark' 
+                        ? 'hsla(210, 40%, 90%, ' + opacityValue + ')' 
+                        : 'hsla(221.2, 83.2%, 53.3%, ' + opacityValue * 0.5 + ')';
+                    ctx.strokeStyle = strokeColor;
                     ctx.lineWidth = 0.5;
                     ctx.beginPath();
                     ctx.moveTo(particles[a].x, particles[a].y);
@@ -132,7 +139,7 @@ const AnimatedHero = () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.onresize = null;
     };
-  }, []);
+  }, [theme]);
 
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full bg-transparent"></canvas>;
 };
