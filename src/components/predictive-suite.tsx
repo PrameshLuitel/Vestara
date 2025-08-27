@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltipContent, ChartLegend } from "@/components/ui/chart";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 
@@ -13,14 +13,23 @@ const generateData = (base: number) => {
     let data = [];
     let value = base;
     for (let i = 1; i <= 20; i++) {
-        data.push({ date: `Day ${i}`, historic: value });
+        data.push({ date: `Day ${i}`, historic: value, predicted: null });
         value += Math.random() * 4 - 2;
     }
-    data.push({ date: 'Day 20', predicted: value });
+    
+    let predictedValue = value;
     for (let i = 21; i <= 30; i++) {
-        data.push({ date: `Day ${i}`, predicted: value });
-        value += Math.random() * 4 - 2;
+        predictedValue += Math.random() * 4 - 2;
+        data.push({ date: `Day ${i}`, historic: null, predicted: predictedValue });
     }
+
+    const lastHistoric = data.findLast(p => p.historic !== null);
+    const firstPredicted = data.find(p => p.predicted !== null);
+    if(lastHistoric && firstPredicted) {
+        const bridgePointIndex = data.indexOf(firstPredicted) -1;
+        data[bridgePointIndex].predicted = lastHistoric.historic;
+    }
+
     return data;
 };
 
@@ -89,9 +98,9 @@ const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] 
     const renderChangeIcon = () => {
         switch (stock.changeType) {
         case "up":
-            return <TrendingUp className="h-6 w-6 text-success" />;
+            return <TrendingUp className="h-6 w-6 text-green-500" />;
         case "down":
-            return <TrendingDown className="h-6 w-6 text-danger" />;
+            return <TrendingDown className="h-6 w-6 text-red-500" />;
         default:
             return <Minus className="h-6 w-6 text-muted-foreground" />;
         }
@@ -102,7 +111,7 @@ const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                  <div className="flex items-baseline gap-4">
                     <h2 className="text-4xl font-bold">{stock.price}</h2>
-                    <p className={`font-semibold ${stock.changeType === 'up' ? 'text-success' : stock.changeType === 'down' ? 'text-danger' : 'text-muted-foreground'}`}>
+                    <p className={`font-semibold ${stock.changeType === 'up' ? 'text-green-500' : stock.changeType === 'down' ? 'text-red-500' : 'text-muted-foreground'}`}>
                         {stock.change}
                     </p>
                     {renderChangeIcon()}
@@ -135,9 +144,9 @@ const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] 
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
                     <YAxis domain={['dataMin - 10', 'dataMax + 10']} hide />
                     <Tooltip content={<ChartTooltipContent />} />
-                    <Legend />
+                    <ChartLegend content={<ChartLegendContent />} />
                     <Area type="monotone" dataKey="historic" stroke="var(--color-historic)" fillOpacity={1} fill="url(#colorHistoric)" strokeWidth={2} connectNulls />
-                    <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} />
+                    <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} connectNulls />
                 </AreaChart>
             </ChartContainer>
         </div>
@@ -149,22 +158,24 @@ const SummaryChart = () => {
 
     const getSummaryData = (stock: StockSymbol) => {
         const models = Object.values(mockModelData);
-        const referenceData = models[0][stock].data;
-        const summaryData = referenceData.map((point: any, index: number) => {
-            if (point.predicted === undefined) {
-                return { date: point.date, historic: point.historic };
+        const referenceData = models[0][stock].data; 
+        
+        const summaryData = referenceData.map((point, index) => {
+            const newPoint = { date: point.date, historic: point.historic, predicted: null };
+            if (point.predicted !== null) {
+                const predictedSum = models.reduce((sum, model) => {
+                    const modelPoint = model[stock].data[index];
+                    return sum + (modelPoint?.predicted || 0);
+                }, 0);
+                newPoint.predicted = predictedSum / models.length;
             }
-            const predictedSum = models.reduce((sum, model) => {
-                const modelPoint = model[stock].data[index];
-                return sum + (modelPoint?.predicted || 0);
-            }, 0);
-            return { date: point.date, predicted: predictedSum / models.length };
+            return newPoint;
         });
 
-        const lastHistoric = summaryData.findLast(p => p.historic !== undefined);
-        const firstPredicted = summaryData.find(p => p.predicted !== undefined);
-        if (lastHistoric && firstPredicted) {
-            firstPredicted.historic = lastHistoric.historic;
+        const lastHistoric = summaryData.findLast(p => p.historic !== null);
+        const firstPredictedIndex = summaryData.findIndex(p => p.predicted !== null);
+        if (lastHistoric && firstPredictedIndex > 0) {
+            summaryData[firstPredictedIndex - 1].predicted = lastHistoric.historic;
         }
 
         return summaryData;
@@ -172,16 +183,19 @@ const SummaryChart = () => {
 
     const summaryData = getSummaryData(selectedStock);
     const lastPrediction = summaryData[summaryData.length - 1].predicted;
-    const firstPrediction = summaryData.find(p => p.predicted !== undefined)?.predicted || 0;
-    const lastHistoric = summaryData.findLast(p => p.historic !== undefined)?.historic || 0;
-    const priceChange = lastPrediction - firstPrediction;
-    const percentageChange = (priceChange / firstPrediction) * 100;
+    const firstPredictionPoint = summaryData.find(p => p.predicted !== null);
+    const firstPrediction = firstPredictionPoint?.predicted || 0;
+    const lastHistoricPoint = summaryData.findLast(p => p.historic !== null);
+    const lastHistoric = lastHistoricPoint?.historic || 0;
+    
+    const priceChange = lastPrediction ? lastPrediction - lastHistoric : 0;
+    const percentageChange = lastHistoric !== 0 ? (priceChange / lastHistoric) * 100 : 0;
     const changeType = priceChange > 0.05 ? 'up' : priceChange < -0.05 ? 'down' : 'neutral';
 
     const renderChangeIcon = () => {
         switch (changeType) {
-            case "up": return <TrendingUp className="h-6 w-6 text-success" />;
-            case "down": return <TrendingDown className="h-6 w-6 text-danger" />;
+            case "up": return <TrendingUp className="h-6 w-6 text-green-500" />;
+            case "down": return <TrendingDown className="h-6 w-6 text-red-500" />;
             default: return <Minus className="h-6 w-6 text-muted-foreground" />;
         }
     };
@@ -190,8 +204,8 @@ const SummaryChart = () => {
          <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="flex items-baseline gap-4">
-                    <h2 className="text-4xl font-bold">{lastPrediction.toFixed(2)}</h2>
-                     <p className={`font-semibold ${changeType === 'up' ? 'text-success' : changeType === 'down' ? 'text-danger' : 'text-muted-foreground'}`}>
+                    <h2 className="text-4xl font-bold">{lastPrediction ? lastPrediction.toFixed(2) : '...'}</h2>
+                     <p className={`font-semibold ${changeType === 'up' ? 'text-green-500' : changeType === 'down' ? 'text-red-500' : 'text-muted-foreground'}`}>
                         {priceChange.toFixed(2)} ({percentageChange.toFixed(2)}%)
                     </p>
                     {renderChangeIcon()}
@@ -224,9 +238,9 @@ const SummaryChart = () => {
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
                     <YAxis domain={['dataMin - 10', 'dataMax + 10']} hide />
                     <Tooltip content={<ChartTooltipContent />} />
-                    <Legend />
+                    <ChartLegend content={<ChartLegendContent />} />
                     <Area type="monotone" dataKey="historic" stroke="var(--color-historic)" fillOpacity={1} fill="url(#colorHistoric)" strokeWidth={2} connectNulls />
-                    <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} />
+                    <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} connectNulls />
                 </AreaChart>
             </ChartContainer>
             <Card className="mt-6">
@@ -237,7 +251,7 @@ const SummaryChart = () => {
                 <CardContent>
                     <p className="text-muted-foreground">
                         The aggregated forecast for <span className="font-semibold text-foreground">{selectedStock}</span> suggests a {changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook. 
-                        By averaging the predictions of {Object.keys(mockModelData).length} different AI models, the consensus points towards a price of approximately <span className="font-semibold text-foreground">${lastPrediction.toFixed(2)}</span> in the next 10 days.
+                        By averaging the predictions of {Object.keys(mockModelData).length} different AI models, the consensus points towards a price of approximately <span className="font-semibold text-foreground">${lastPrediction ? lastPrediction.toFixed(2) : 'N/A'}</span> in the next 10 days.
                         This represents a potential {changeType !== 'neutral' ? `${percentageChange.toFixed(2)}%` : ''} change from the last known price of ${lastHistoric.toFixed(2)}.
                     </p>
                 </CardContent>
@@ -256,7 +270,7 @@ export default function PredictiveSuite() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="LSTM" className="w-full">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto pb-2">
             <TabsList>
               {Object.keys(mockModelData).map(modelName => (
                   <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
@@ -266,7 +280,7 @@ export default function PredictiveSuite() {
           </div>
           {Object.entries(mockModelData).map(([modelName, modelData]) => (
             <TabsContent key={modelName} value={modelName} className="mt-4">
-              <ModelChart modelData={modelData} />
+              <ModelChart modelData={modelData as any} />
             </TabsContent>
           ))}
           <TabsContent value="summary" className="mt-4">
@@ -277,3 +291,5 @@ export default function PredictiveSuite() {
     </Card>
   );
 }
+
+    
