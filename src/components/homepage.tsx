@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Activity, Scale, BrainCircuit } from "lucide-react";
+import AnimatedHero from "./animated-hero";
 
 export default function Homepage() {
   const features = [
@@ -12,12 +13,15 @@ export default function Homepage() {
   return (
     <div className="flex flex-col items-center text-center p-4">
       <div className="relative w-full max-w-5xl mx-auto mb-12 flex flex-col items-center justify-center text-center p-4 min-h-[30vh]">
-        <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tighter text-white">
-            Vestara
-        </h1>
-        <p className="text-lg md:text-xl text-white/70 max-w-3xl">
-            Pioneering the convergence of AI, regulation, and finance to build the foundational intelligence layer for Nepal's emerging financial ecosystem.
-        </p>
+        <AnimatedHero />
+        <div className="relative z-10">
+            <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tighter text-white">
+                Vestara
+            </h1>
+            <p className="text-lg md:text-xl text-white/70 max-w-3xl">
+                Pioneering the convergence of AI, regulation, and finance to build the foundational intelligence layer for Nepal's emerging financial ecosystem.
+            </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-5xl">

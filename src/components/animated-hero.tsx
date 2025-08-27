@@ -103,8 +103,8 @@ const AnimatedHero = () => {
             for (let b = a; b < particles.length; b++) {
                 let distance = ((particles[a].x - particles[b].x) * (particles[a].x - particles[b].x))
                              + ((particles[a].y - particles[b].y) * (particles[a].y - particles[b].y));
-                if (distance < (w/10) * (h/10)) {
-                    opacityValue = 1 - (distance/10000);
+                if (distance < (w/7) * (h/7)) {
+                    opacityValue = 1 - (distance/20000);
                     ctx.strokeStyle = 'hsla(210, 40%, 90%, ' + opacityValue + ')';
                     ctx.lineWidth = 0.5;
                     ctx.beginPath();
