@@ -12,13 +12,13 @@ export default function Homepage() {
 
   return (
     <div className="flex flex-col items-center text-center p-4">
-      <div className="relative w-full max-w-5xl mx-auto mb-12 overflow-hidden rounded-lg shadow-xl aspect-[2/1]">
+      <div className="relative w-full max-w-5xl mx-auto mb-12 overflow-hidden rounded-lg shadow-xl aspect-[2/1] bg-card border">
         <AnimatedHero />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-black/30">
-            <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tighter text-white">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-transparent">
+            <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tighter text-foreground">
                 Vestara
             </h1>
-            <p className="text-lg md:text-xl text-gray-200 max-w-3xl">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl">
                 Pioneering the convergence of AI, regulation, and finance to build the foundational intelligence layer for Nepal's emerging financial ecosystem.
             </p>
         </div>

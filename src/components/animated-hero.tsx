@@ -5,9 +5,6 @@ import React, { useEffect, useRef } from 'react';
 
 const AnimatedHero = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const starsRef = useRef<any[]>([]);
-  const radiusRef = useRef(0);
-  const velocityRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -17,99 +14,127 @@ const AnimatedHero = () => {
     if (!ctx) return;
 
     let w: number, h: number;
+    let mouse = { x: 0, y: 0 };
+
     const setCanvasExtents = () => {
       w = canvas.width = canvas.parentElement ? canvas.parentElement.clientWidth : window.innerWidth;
       h = canvas.height = canvas.parentElement ? canvas.parentElement.clientHeight : window.innerHeight;
     };
     setCanvasExtents();
     window.onresize = setCanvasExtents;
-    
-    const STAR_COUNT = 800;
-    const STAR_MIN_SCALE = 0.2;
-    const STAR_MAX_SCALE = 1.5;
-    const OVERFLOW_THRESHOLD = 50;
 
-    const generate = () => {
-      for (let i = 0; i < STAR_COUNT; i++) {
-        starsRef.current[i] = {
-          x: 0,
-          y: 0,
-          z: STAR_MIN_SCALE + Math.random() * (1 - STAR_MIN_SCALE),
-        };
+    const handleMouseMove = (e: MouseEvent) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    }
+    window.addEventListener('mousemove', handleMouseMove);
+
+    class Particle {
+      x: number;
+      y: number;
+      size: number;
+      baseX: number;
+      baseY: number;
+      density: number;
+      color: string;
+
+      constructor(x: number, y: number) {
+        this.x = x + (Math.random() - 0.5) * 50;
+        this.y = y + (Math.random() - 0.5) * 50;
+        this.size = Math.random() * 1.5 + 0.5;
+        this.baseX = x;
+        this.baseY = y;
+        this.density = (Math.random() * 30) + 1;
+        this.color = 'hsla(0, 0%, 80%, 0.8)';
       }
-    };
-    generate();
 
-    const recycleStar = (star: any) => {
-        star.x = (Math.random() * w - w / 2) * radiusRef.current;
-        star.y = (Math.random() * h - h / 2) * radiusRef.current;
-        star.z = STAR_MIN_SCALE + Math.random() * (1 - STAR_MIN_SCALE);
-        star.color = `rgba(173, 216, 230, ${0.5 + Math.random() * 0.5})`;
-        star.opacity = 0;
-    };
-
-
-    const moveStars = (delta: number) => {
-        starsRef.current.forEach((star) => {
-            star.z -= delta * velocityRef.current;
-            if (star.z <= 0) {
-                recycleStar(star);
-            }
-        });
-    };
-    
-    const setup = () => {
-        radiusRef.current = Math.min(w, h) / 2.2;
-        velocityRef.current = 0.05;
-        starsRef.current.forEach(recycleStar);
-    };
-    setup();
-
-
-    const render = () => {
-      ctx.clearRect(0, 0, w, h);
-      
-      const gradient = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, radiusRef.current);
-      gradient.addColorStop(0, 'rgba(25, 25, 112, 0.1)'); 
-      gradient.addColorStop(0.3, 'rgba(75, 0, 130, 0.2)');
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, w, h);
-
-      starsRef.current.forEach((star) => {
-        const x = star.x / star.z + w / 2;
-        const y = star.y / star.z + h / 2;
-
-        if (x < 0 || x >= w || y < 0 || y >= h) {
-          return;
-        }
-
-        const scale = star.z;
-        const d = (1 - scale) * 3;
+      draw() {
+        if(!ctx) return;
+        ctx.fillStyle = this.color;
         ctx.beginPath();
-        ctx.arc(x, y, d, 0, Math.PI * 2, true);
-        ctx.fillStyle = star.color;
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.closePath();
         ctx.fill();
-      });
-    };
+      }
 
-    let animationFrameId: number;
-    const step = (time: number) => {
-        moveStars(time / 16);
-        render();
-        animationFrameId = requestAnimationFrame(step);
+      update() {
+        let dx = mouse.x - this.x;
+        let dy = mouse.y - this.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        let forceDirectionX = dx / distance;
+        let forceDirectionY = dy / distance;
+        let maxDistance = 100;
+        let force = (maxDistance - distance) / maxDistance;
+        let directionX = (forceDirectionX * force * this.density);
+        let directionY = (forceDirectionY * force * this.density);
+
+        if (distance < maxDistance) {
+          this.x -= directionX;
+          this.y -= directionY;
+        } else {
+          if (this.x !== this.baseX) {
+            let dx = this.x - this.baseX;
+            this.x -= dx / 10;
+          }
+          if (this.y !== this.baseY) {
+            let dy = this.y - this.baseY;
+            this.y -= dy / 10;
+          }
+        }
+      }
+    }
+
+    let particles: Particle[] = [];
+    const init = () => {
+      particles = [];
+      const gap = 18;
+      for (let y = 0; y < h; y += gap) {
+        for (let x = 0; x < w; x += gap) {
+          particles.push(new Particle(x, y));
+        }
+      }
     };
-    
-    animationFrameId = requestAnimationFrame(step);
+    init();
+
+    const animate = () => {
+        if(!ctx) return;
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        connect();
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    const connect = () => {
+        if(!ctx) return;
+        let opacityValue = 1;
+        for (let a = 0; a < particles.length; a++) {
+            for (let b = a; b < particles.length; b++) {
+                let distance = ((particles[a].x - particles[b].x) * (particles[a].x - particles[b].x))
+                             + ((particles[a].y - particles[b].y) * (particles[a].y - particles[b].y));
+                if (distance < (w/10) * (h/10)) {
+                    opacityValue = 1 - (distance/10000);
+                    ctx.strokeStyle = 'hsla(210, 40%, 90%, ' + opacityValue + ')';
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(particles[a].x, particles[a].y);
+                    ctx.lineTo(particles[b].x, particles[b].y);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
 
     return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
         window.onresize = null;
-        cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full bg-[#080210]"></canvas>;
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full bg-transparent"></canvas>;
 };
 
 export default AnimatedHero;
