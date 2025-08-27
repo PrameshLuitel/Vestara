@@ -21,7 +21,16 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <div className="flex flex-col min-h-screen">
+          <main className="flex-grow">
+            {children}
+          </main>
+          <footer className="w-full py-4 px-8 text-center">
+            <p className="text-xs text-muted-foreground">
+              All content is AI-based. Do not take it as financial advice. This is for educational, testing, and research purposes only.
+            </p>
+          </footer>
+        </div>
         <Toaster />
       </body>
     </html>

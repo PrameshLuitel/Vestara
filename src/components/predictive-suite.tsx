@@ -161,13 +161,13 @@ const SummaryChart = () => {
         const referenceData = models[0][stock].data; 
         
         const summaryData = referenceData.map((point, index) => {
-            const newPoint = { date: point.date, historic: point.historic, predicted: null };
+            const newPoint = { date: point.date, historic: point.historic, predicted: null as number | null };
             if (point.predicted !== null) {
-                const predictedSum = models.reduce((sum, model) => {
-                    const modelPoint = model[stock].data[index];
-                    return sum + (modelPoint?.predicted || 0);
-                }, 0);
-                newPoint.predicted = predictedSum / models.length;
+                const predictedValues = models.map(model => model[stock].data[index]?.predicted).filter(p => p !== null && p !== undefined) as number[];
+                if (predictedValues.length > 0) {
+                    const predictedSum = predictedValues.reduce((sum, value) => sum + value, 0);
+                    newPoint.predicted = predictedSum / predictedValues.length;
+                }
             }
             return newPoint;
         });
@@ -256,6 +256,11 @@ const SummaryChart = () => {
                     </p>
                 </CardContent>
             </Card>
+             <div className="mt-4 text-center">
+                <p className="text-xs text-muted-foreground">
+                    *This is the summary of all the other predictive models.
+                </p>
+            </div>
         </div>
     );
 };
@@ -275,7 +280,7 @@ export default function PredictiveSuite() {
               {Object.keys(mockModelData).map(modelName => (
                   <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
               ))}
-              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="summary">Summary*</TabsTrigger>
             </TabsList>
           </div>
           {Object.entries(mockModelData).map(([modelName, modelData]) => (
