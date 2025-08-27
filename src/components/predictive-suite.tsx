@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip } from 'recharts';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 
 const generateData = (base: number) => {
     let data = [];
@@ -68,6 +68,7 @@ const mockModelData = {
 };
 
 type ModelName = keyof typeof mockModelData;
+type StockSymbol = 'AAPL' | 'GOOGL' | 'TSLA';
 
 const chartConfig = {
     historic: {
@@ -82,8 +83,8 @@ const chartConfig = {
 
 
 const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] }) => {
-    const [selectedStock, setSelectedStock] = useState("AAPL");
-    const stock = modelData[selectedStock as keyof typeof modelData];
+    const [selectedStock, setSelectedStock] = useState<StockSymbol>("AAPL");
+    const stock = modelData[selectedStock];
 
     const renderChangeIcon = () => {
         switch (stock.changeType) {
@@ -106,7 +107,7 @@ const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] 
                     </p>
                     {renderChangeIcon()}
                 </div>
-                <Select onValueChange={setSelectedStock} defaultValue={selectedStock}>
+                <Select onValueChange={(value) => setSelectedStock(value as StockSymbol)} defaultValue={selectedStock}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Select a stock" />
                     </SelectTrigger>
@@ -143,6 +144,108 @@ const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] 
     );
 };
 
+const SummaryChart = () => {
+    const [selectedStock, setSelectedStock] = useState<StockSymbol>("AAPL");
+
+    const getSummaryData = (stock: StockSymbol) => {
+        const models = Object.values(mockModelData);
+        const referenceData = models[0][stock].data;
+        const summaryData = referenceData.map((point: any, index: number) => {
+            if (point.predicted === undefined) {
+                return { date: point.date, historic: point.historic };
+            }
+            const predictedSum = models.reduce((sum, model) => {
+                const modelPoint = model[stock].data[index];
+                return sum + (modelPoint?.predicted || 0);
+            }, 0);
+            return { date: point.date, predicted: predictedSum / models.length };
+        });
+
+        const lastHistoric = summaryData.findLast(p => p.historic !== undefined);
+        const firstPredicted = summaryData.find(p => p.predicted !== undefined);
+        if (lastHistoric && firstPredicted) {
+            firstPredicted.historic = lastHistoric.historic;
+        }
+
+        return summaryData;
+    }
+
+    const summaryData = getSummaryData(selectedStock);
+    const lastPrediction = summaryData[summaryData.length - 1].predicted;
+    const firstPrediction = summaryData.find(p => p.predicted !== undefined)?.predicted || 0;
+    const lastHistoric = summaryData.findLast(p => p.historic !== undefined)?.historic || 0;
+    const priceChange = lastPrediction - firstPrediction;
+    const percentageChange = (priceChange / firstPrediction) * 100;
+    const changeType = priceChange > 0.05 ? 'up' : priceChange < -0.05 ? 'down' : 'neutral';
+
+    const renderChangeIcon = () => {
+        switch (changeType) {
+            case "up": return <TrendingUp className="h-6 w-6 text-success" />;
+            case "down": return <TrendingDown className="h-6 w-6 text-danger" />;
+            default: return <Minus className="h-6 w-6 text-muted-foreground" />;
+        }
+    };
+
+    return (
+         <div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex items-baseline gap-4">
+                    <h2 className="text-4xl font-bold">{lastPrediction.toFixed(2)}</h2>
+                     <p className={`font-semibold ${changeType === 'up' ? 'text-success' : changeType === 'down' ? 'text-danger' : 'text-muted-foreground'}`}>
+                        {priceChange.toFixed(2)} ({percentageChange.toFixed(2)}%)
+                    </p>
+                    {renderChangeIcon()}
+                </div>
+                <Select onValueChange={(value) => setSelectedStock(value as StockSymbol)} defaultValue={selectedStock}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Select a stock" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="AAPL">Apple (AAPL)</SelectItem>
+                        <SelectItem value="GOOGL">Google (GOOGL)</SelectItem>
+                        <SelectItem value="TSLA">Tesla (TSLA)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <ChartContainer config={chartConfig} className="w-full h-[400px]">
+                <AreaChart data={summaryData}
+                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorHistoric" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--color-historic)" stopOpacity={0.4}/>
+                            <stop offset="95%" stopColor="var(--color-historic)" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--color-predicted)" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="var(--color-predicted)" stopOpacity={0}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} hide />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Area type="monotone" dataKey="historic" stroke="var(--color-historic)" fillOpacity={1} fill="url(#colorHistoric)" strokeWidth={2} connectNulls />
+                    <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} />
+                </AreaChart>
+            </ChartContainer>
+            <Card className="mt-6">
+                <CardHeader className="flex flex-row items-center gap-2">
+                    <Info className="h-5 w-5" />
+                    <CardTitle>Summary Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">
+                        The aggregated forecast for <span className="font-semibold text-foreground">{selectedStock}</span> suggests a {changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook. 
+                        By averaging the predictions of {Object.keys(mockModelData).length} different AI models, the consensus points towards a price of approximately <span className="font-semibold text-foreground">${lastPrediction.toFixed(2)}</span> in the next 10 days.
+                        This represents a potential {changeType !== 'neutral' ? `${percentageChange.toFixed(2)}%` : ''} change from the last known price of ${lastHistoric.toFixed(2)}.
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
+    );
+};
+
 
 export default function PredictiveSuite() {
   return (
@@ -158,6 +261,7 @@ export default function PredictiveSuite() {
               {Object.keys(mockModelData).map(modelName => (
                   <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
               ))}
+              <TabsTrigger value="summary">Summary</TabsTrigger>
             </TabsList>
           </div>
           {Object.entries(mockModelData).map(([modelName, modelData]) => (
@@ -165,10 +269,11 @@ export default function PredictiveSuite() {
               <ModelChart modelData={modelData} />
             </TabsContent>
           ))}
+          <TabsContent value="summary" className="mt-4">
+              <SummaryChart />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
   );
 }
-
-    
