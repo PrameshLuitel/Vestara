@@ -39,7 +39,7 @@ export default function VestaraGpt() {
     const userMessage: Message = { id: generateUniqueId(), text: textToSend, sender: 'user' };
     
     setMessages(prev => {
-        const currentMessages = prev.length > 0 ? prev : [{ id: generateUniqueId(), text: "I am Vestara, your regulatory and market intelligence co-pilot for Nepal's financial markets. How can I assist you?", sender: 'bot' }];
+        const currentMessages = prev.length > 0 ? prev : [{ id: generateUniqueId(), text: "I am Vestara, your regulatory and market intelligence co-pilot. Built on a custom knowledge base with enhanced RAG, I provide precise, context-aware answers for Nepal's financial markets. How can I assist?", sender: 'bot' }];
         return [...currentMessages, userMessage];
     });
   
@@ -58,7 +58,7 @@ export default function VestaraGpt() {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <h1 className="text-4xl font-bold font-headline mb-2">Vestara Gpt</h1>
-            <p className="text-muted-foreground mb-8">An AI co-pilot for Nepal's financial ecosystem.</p>
+            <p className="text-muted-foreground mb-8">AI co-pilot for Nepal's financial ecosystem, grounded by a custom RAG process for accuracy.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
                 {examplePrompts.map(ex => (
                     <Card key={ex.title} className="hover:bg-accent transition-colors cursor-pointer text-left" onClick={() => handleSend(ex.prompt)}>

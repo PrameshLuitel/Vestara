@@ -46,7 +46,7 @@ export default function Homepage() {
                     <CardTitle>Architecting Market Integrity</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground">Vestara is not just an application; it is an intervention. In a financial landscape defined by opacity, we are deploying a regulatory-intelligent LLM to bring unprecedented clarity and compliance. This is the first step toward engineering a more transparent, equitable, and efficient market for Nepal.</p>
+                    <p className="text-muted-foreground">Vestara is not just an application; it is an intervention. In a financial landscape defined by opacity, we are deploying a regulatory-intelligent LLM architected for precision. By leveraging a custom knowledge base and an enhanced RAG process, Vestara minimizes hallucinations, delivering reliable guidance grounded in Nepal's specific regulatory and market data. This is the first step toward engineering a more transparent, equitable, and efficient market.</p>
                 </CardContent>
             </Card>
              <Card>
