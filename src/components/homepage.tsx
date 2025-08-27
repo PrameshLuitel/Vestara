@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Activity, DollarSign, Building2 } from "lucide-react";
-import Image from 'next/image';
+import AnimatedHero from "./animated-hero";
 
 export default function Homepage() {
   const sectors = [
@@ -12,26 +12,16 @@ export default function Homepage() {
 
   return (
     <div className="flex flex-col items-center text-center p-4">
-      <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tighter">
-        Vestara
-      </h1>
-      <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-12">
-        Harnessing the power of predictive analytics to illuminate your path in the stock market. Your sultry muse for market insights.
-      </p>
-
-      <div className="w-full max-w-5xl mx-auto">
-        <Card className="mb-12 overflow-hidden shadow-xl">
-          <CardContent className="p-0">
-             <Image
-                src="https://picsum.photos/1200/600"
-                alt="Abstract market graph"
-                width={1200}
-                height={600}
-                className="w-full object-cover"
-                data-ai-hint="abstract finance"
-              />
-          </CardContent>
-        </Card>
+      <div className="relative w-full max-w-5xl mx-auto mb-12 overflow-hidden rounded-lg shadow-xl aspect-[2/1]">
+        <AnimatedHero />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-black/30">
+            <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 tracking-tighter text-white">
+                Vestara
+            </h1>
+            <p className="text-lg md:text-xl text-gray-200 max-w-2xl">
+                Harnessing the power of predictive analytics to illuminate your path in the stock market. Your sultry muse for market insights.
+            </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-5xl">
