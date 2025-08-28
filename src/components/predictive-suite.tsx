@@ -72,7 +72,7 @@ const mockModelData = {
     DQN: {
         AAPL: { price: "172.80", change: "+2.05 (1.20%)", changeType: "up", data: generateData(155) },
         GOOGL: { price: "135.30", change: "-1.05 (0.77%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.20", change: "-0.16 (0.09%)", changeType: "down", data: generateData(160) },
+        TSLA: { price: "178.20", change: "+0.84 (0.47%)", changeType: "up", data: generateData(160) },
     },
 };
 
