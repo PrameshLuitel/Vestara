@@ -10,7 +10,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip, Responsi
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 
-const generateData = (base: number, isNegative?: boolean) => {
+const generateData = (base: number) => {
     let data = [];
     let value = base;
     for (let i = 1; i <= 20; i++) {
@@ -20,7 +20,7 @@ const generateData = (base: number, isNegative?: boolean) => {
     
     let predictedValue = value;
     for (let i = 21; i <= 30; i++) {
-        const change = isNegative ? (Math.random() * -2) : (Math.random() * 4 - 2);
+        const change = Math.random() * 4 - 2;
         predictedValue += change;
         data.push({ date: `Day ${i}`, historic: null, predicted: predictedValue });
     }
@@ -36,45 +36,40 @@ const generateData = (base: number, isNegative?: boolean) => {
 };
 
 const mockModelData = {
-    LSTM: {
+    "LSTM": {
         AAPL: { price: "172.50", change: "+1.75 (1.02%)", changeType: "up", data: generateData(155) },
         GOOGL: { price: "135.80", change: "-0.55 (0.40%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.60", change: "+0.24 (0.14%)", changeType: "neutral", data: generateData(160) },
+        TSLA: { price: "177.60", change: "+0.24 (0.14%)", changeType: "neutral", data: generateData(175) },
     },
-    Prophet: {
+    "Prophet": {
         AAPL: { price: "172.45", change: "+1.70 (1.00%)", changeType: "up", data: generateData(155) },
         GOOGL: { price: "135.70", change: "-0.65 (0.48%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.50", change: "+0.14 (0.08%)", changeType: "neutral", data: generateData(160) },
+        TSLA: { price: "177.50", change: "+0.14 (0.08%)", changeType: "neutral", data: generateData(175) },
     },
-    XGBoost: {
+    "XGBoost": {
         AAPL: { price: "172.30", change: "+1.55 (0.91%)", changeType: "up", data: generateData(155) },
         GOOGL: { price: "135.90", change: "-0.45 (0.33%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.70", change: "+0.34 (0.19%)", changeType: "up", data: generateData(160) },
+        TSLA: { price: "177.70", change: "+0.34 (0.19%)", changeType: "up", data: generateData(175) },
     },
-    LightGBM: {
+    "LightGBM": {
         AAPL: { price: "172.60", change: "+1.85 (1.08%)", changeType: "up", data: generateData(155) },
         GOOGL: { price: "135.50", change: "-0.85 (0.62%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.40", change: "+0.04 (0.02%)", changeType: "neutral", data: generateData(160) },
-    },
-    TCN: {
-        AAPL: { price: "172.20", change: "+1.45 (0.85%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "136.00", change: "-0.35 (0.26%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.80", change: "+0.44 (0.25%)", changeType: "up", data: generateData(160) },
-    },
-    AutoML: {
-        AAPL: { price: "172.10", change: "+1.35 (0.79%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "136.10", change: "-0.25 (0.18%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.90", change: "+0.54 (0.30%)", changeType: "up", data: generateData(160) },
+        TSLA: { price: "177.40", change: "+0.04 (0.02%)", changeType: "neutral", data: generateData(175) },
     },
     "Random Forest": {
         AAPL: { price: "172.05", change: "+1.30 (0.76%)", changeType: "up", data: generateData(155) },
         GOOGL: { price: "136.15", change: "-0.20 (0.15%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.95", change: "+0.59 (0.33%)", changeType: "up", data: generateData(160) },
+        TSLA: { price: "177.95", change: "+0.59 (0.33%)", changeType: "up", data: generateData(175) },
     },
-    DQN: {
-        AAPL: { price: "172.80", change: "+2.05 (1.20%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "135.30", change: "-1.05 (0.77%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "178.20", change: "+0.84 (0.47%)", changeType: "up", data: generateData(160, false) },
+    "Linear Regression": {
+        AAPL: { price: "171.90", change: "+1.15 (0.67%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "136.30", change: "-0.05 (0.04%)", changeType: "neutral", data: generateData(125) },
+        TSLA: { price: "178.50", change: "+1.14 (0.64%)", changeType: "up", data: generateData(175) },
+    },
+    "Exponential Smoothing": {
+        AAPL: { price: "172.70", change: "+1.95 (1.14%)", changeType: "up", data: generateData(155) },
+        GOOGL: { price: "135.40", change: "-0.95 (0.70%)", changeType: "down", data: generateData(125) },
+        TSLA: { price: "177.00", change: "-0.36 (0.20%)", changeType: "down", data: generateData(175) },
     },
 };
 
@@ -106,39 +101,14 @@ const ModelChart = ({ modelName, modelData }: { modelName: ModelName, modelData:
     const [loading, setLoading] = useState(false);
     const [apiData, setApiData] = useState<StockData | null>(null);
 
-    // This useEffect would fetch data from your backend
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             setApiData(null);
-            /*
-            // Example of how you would fetch data from a real API
-            try {
-                // Replace with your actual API endpoint
-                const response = await fetch(`/api/predictions?model=${modelName}&stock=${selectedStock}`);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                setApiData(data);
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
-                // Keep using mock data as fallback
-                setApiData(null);
-            } finally {
-                setLoading(false);
-            }
-            */
-            // Simulating API call for demonstration
             setTimeout(() => {
                 setLoading(false);
             }, 500);
         };
-
-        // For now, we're not calling fetchData() to keep using mock data.
-        // To enable API calls, uncomment the line below.
-        // fetchData();
-
     }, [modelName, selectedStock]);
 
     const stock = apiData || modelData[selectedStock];
@@ -216,7 +186,7 @@ const ModelChart = ({ modelName, modelData }: { modelName: ModelName, modelData:
     );
 };
 
-const SummaryChart = () => {
+const SummaryChart = ({ type }: { type: 'mean' | 'median' }) => {
     const [selectedStock, setSelectedStock] = useState<StockSymbol>("AAPL");
 
     const getSummaryData = (stock: StockSymbol) => {
@@ -228,8 +198,14 @@ const SummaryChart = () => {
             if (point.predicted !== null) {
                 const predictedValues = models.map(model => model[stock].data[index]?.predicted).filter(p => p !== null && p !== undefined) as number[];
                 if (predictedValues.length > 0) {
-                    const predictedSum = predictedValues.reduce((sum, value) => sum + value, 0);
-                    newPoint.predicted = predictedSum / predictedValues.length;
+                    if (type === 'mean') {
+                        const predictedSum = predictedValues.reduce((sum, value) => sum + value, 0);
+                        newPoint.predicted = predictedSum / predictedValues.length;
+                    } else { // median
+                        const sorted = [...predictedValues].sort((a, b) => a - b);
+                        const mid = Math.floor(sorted.length / 2);
+                        newPoint.predicted = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+                    }
                 }
             }
             return newPoint;
@@ -262,6 +238,11 @@ const SummaryChart = () => {
             default: return <Minus className="h-6 w-6 text-muted-foreground" />;
         }
     };
+    
+    const analysisText = type === 'mean' 
+        ? `The aggregated forecast for ${selectedStock} suggests a ${changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook. By averaging the predictions of ${Object.keys(mockModelData).length} different AI models, the consensus points towards a price of approximately $${lastPrediction ? lastPrediction.toFixed(2) : 'N/A'} in the next 10 days.`
+        : `The median forecast for ${selectedStock} suggests a ${changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook. By taking the median prediction from ${Object.keys(mockModelData).length} different AI models, which reduces the impact of outliers, the consensus points to a price of approximately $${lastPrediction ? lastPrediction.toFixed(2) : 'N/A'} in the next 10 days.`;
+
 
     return (
          <div>
@@ -313,9 +294,7 @@ const SummaryChart = () => {
                 </CardHeader>
                 <CardContent>
                     <p className="text-muted-foreground">
-                        The aggregated forecast for <span className="font-semibold text-foreground">{selectedStock}</span> suggests a {changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook. 
-                        By averaging the predictions of {Object.keys(mockModelData).length} different AI models, the consensus points towards a price of approximately <span className="font-semibold text-foreground">${lastPrediction ? lastPrediction.toFixed(2) : 'N/A'}</span> in the next 10 days.
-                        This represents a potential {changeType !== 'neutral' ? `${percentageChange.toFixed(2)}%` : ''} change from the last known price of ${lastHistoric.toFixed(2)}.
+                        {analysisText} This represents a potential {changeType !== 'neutral' ? `${percentageChange.toFixed(2)}%` : ''} change from the last known price of ${lastHistoric.toFixed(2)}.
                     </p>
                 </CardContent>
             </Card>
@@ -343,7 +322,8 @@ export default function PredictiveSuite() {
               {Object.keys(mockModelData).map(modelName => (
                   <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
               ))}
-              <TabsTrigger value="summary">Summary*</TabsTrigger>
+              <TabsTrigger value="ensemble-mean">Ensemble Mean*</TabsTrigger>
+              <TabsTrigger value="ensemble-median">Ensemble Median*</TabsTrigger>
             </TabsList>
           </div>
           {Object.entries(mockModelData).map(([modelName, modelData]) => (
@@ -351,13 +331,18 @@ export default function PredictiveSuite() {
               <ModelChart modelName={modelName as ModelName} modelData={modelData as any} />
             </TabsContent>
           ))}
-          <TabsContent value="summary" className="mt-4">
-              <SummaryChart />
+          <TabsContent value="ensemble-mean" className="mt-4">
+              <SummaryChart type="mean" />
+          </TabsContent>
+          <TabsContent value="ensemble-median" className="mt-4">
+              <SummaryChart type="median" />
           </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
   );
 }
+
+    
 
     
