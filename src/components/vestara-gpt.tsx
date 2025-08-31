@@ -88,11 +88,12 @@ export default function VestaraGpt() {
           <Input
             className="w-full h-12 pr-12 rounded-full"
             type="text"
-            placeholder="Query Nepal's financial regulations and markets..."
+            placeholder="Vestara GPT is under development"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            disabled
           />
-          <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full">
+          <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full" disabled>
             <Send className="h-4 w-4" />
           </Button>
         </form>
