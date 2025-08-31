@@ -1,15 +1,16 @@
 
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { Skeleton } from './ui/skeleton';
 
-const generateData = (base: number) => {
+const generateData = (base: number, isNegative?: boolean) => {
     let data = [];
     let value = base;
     for (let i = 1; i <= 20; i++) {
@@ -19,7 +20,8 @@ const generateData = (base: number) => {
     
     let predictedValue = value;
     for (let i = 21; i <= 30; i++) {
-        predictedValue += Math.random() * 4 - 2;
+        const change = isNegative ? (Math.random() * -2) : (Math.random() * 4 - 2);
+        predictedValue += change;
         data.push({ date: `Day ${i}`, historic: null, predicted: predictedValue });
     }
 
@@ -72,12 +74,20 @@ const mockModelData = {
     DQN: {
         AAPL: { price: "172.80", change: "+2.05 (1.20%)", changeType: "up", data: generateData(155) },
         GOOGL: { price: "135.30", change: "-1.05 (0.77%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "178.20", change: "+0.84 (0.47%)", changeType: "up", data: generateData(160) },
+        TSLA: { price: "178.20", change: "+0.84 (0.47%)", changeType: "up", data: generateData(160, false) },
     },
 };
 
+
 type ModelName = keyof typeof mockModelData;
 type StockSymbol = 'AAPL' | 'GOOGL' | 'TSLA';
+
+interface StockData {
+    price: string;
+    change: string;
+    changeType: 'up' | 'down' | 'neutral';
+    data: { date: string; historic: number | null; predicted: number | null }[];
+}
 
 const chartConfig = {
     historic: {
@@ -91,9 +101,47 @@ const chartConfig = {
 };
 
 
-const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] }) => {
+const ModelChart = ({ modelName, modelData }: { modelName: ModelName, modelData: typeof mockModelData[ModelName] }) => {
     const [selectedStock, setSelectedStock] = useState<StockSymbol>("AAPL");
-    const stock = modelData[selectedStock];
+    const [loading, setLoading] = useState(false);
+    const [apiData, setApiData] = useState<StockData | null>(null);
+
+    // This useEffect would fetch data from your backend
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setApiData(null);
+            /*
+            // Example of how you would fetch data from a real API
+            try {
+                // Replace with your actual API endpoint
+                const response = await fetch(`/api/predictions?model=${modelName}&stock=${selectedStock}`);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                setApiData(data);
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                // Keep using mock data as fallback
+                setApiData(null);
+            } finally {
+                setLoading(false);
+            }
+            */
+            // Simulating API call for demonstration
+            setTimeout(() => {
+                setLoading(false);
+            }, 500);
+        };
+
+        // For now, we're not calling fetchData() to keep using mock data.
+        // To enable API calls, uncomment the line below.
+        // fetchData();
+
+    }, [modelName, selectedStock]);
+
+    const stock = apiData || modelData[selectedStock];
 
     const renderChangeIcon = () => {
         switch (stock.changeType) {
@@ -105,6 +153,21 @@ const ModelChart = ({ modelData }: { modelData: typeof mockModelData[ModelName] 
             return <Minus className="h-6 w-6 text-muted-foreground" />;
         }
     };
+    
+    if (loading) {
+        return (
+            <div>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div className="flex items-baseline gap-4">
+                        <Skeleton className="h-10 w-24" />
+                        <Skeleton className="h-6 w-32" />
+                    </div>
+                    <Skeleton className="h-10 w-full sm:w-[180px]" />
+                </div>
+                <Skeleton className="w-full h-[400px]" />
+            </div>
+        )
+    }
 
     return (
         <div>
@@ -285,7 +348,7 @@ export default function PredictiveSuite() {
           </div>
           {Object.entries(mockModelData).map(([modelName, modelData]) => (
             <TabsContent key={modelName} value={modelName} className="mt-4">
-              <ModelChart modelData={modelData as any} />
+              <ModelChart modelName={modelName as ModelName} modelData={modelData as any} />
             </TabsContent>
           ))}
           <TabsContent value="summary" className="mt-4">
@@ -296,3 +359,5 @@ export default function PredictiveSuite() {
     </Card>
   );
 }
+
+    
