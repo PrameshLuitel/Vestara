@@ -31,7 +31,7 @@ async function getHistoricalData() {
     try {
         const response = await fetch(historicalUrl, { next: { revalidate: 3600 } });
         if (!response.ok) {
-            console.error('Failed to fetch historical data workbook');
+            console.error(`Failed to fetch historical data workbook. Status: ${response.status}`);
             return null;
         }
         const arrayBuffer = await response.arrayBuffer();
@@ -99,7 +99,7 @@ async function getForecastData() {
     try {
         const response = await fetch(forecastUrl, { next: { revalidate: 3600 } });
          if (!response.ok) {
-            console.error('Failed to fetch forecast data workbook');
+            console.error(`Failed to fetch forecast data workbook. Status: ${response.status}`);
             return null;
         }
         const arrayBuffer = await response.arrayBuffer();
@@ -188,4 +188,3 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
     }
 }
-
