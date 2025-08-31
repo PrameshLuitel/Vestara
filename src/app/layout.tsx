@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: 'Vestara: Sultry Market Muse',
-  description: 'Predictive analytics for the stock market.',
+  title: 'Vestara: AI-Powered Investment Intelligence',
+  description: "Unifying deep regulatory knowledge with predictive market analytics for Nepal's financial sector.",
 };
 
 export default function RootLayout({
