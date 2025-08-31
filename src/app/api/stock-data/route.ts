@@ -155,9 +155,9 @@ async function getForecastData() {
                 }
 
                 // Correctly convert Excel date serial number to YYYY-MM-DD
+                // The numeric value represents days since 1899-12-30.
                 const excelDate = parseFloat(rowData.Date);
-                const jsDate = new Date(1899, 11, 30);
-                jsDate.setDate(jsDate.getDate() + excelDate);
+                const jsDate = new Date(1899, 11, 30 + excelDate);
                 const formattedDate = jsDate.toISOString().split('T')[0];
                 
                 Object.keys(data[symbol]).forEach(modelKey => {
@@ -218,5 +218,3 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
     }
 }
-
-    
