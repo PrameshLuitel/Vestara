@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import xlsx from 'xlsx';
+import * as xlsx from 'xlsx';
 
 // Helper function to get the sheet name for the date N days ago
 function getSheetName(daysAgo = 0) {
