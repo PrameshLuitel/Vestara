@@ -104,8 +104,19 @@ async function getForecastData() {
         }
         const arrayBuffer = await response.arrayBuffer();
         const workbook = xlsx.read(arrayBuffer, { type: 'buffer' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+        
+        const dateSheetRegex = /^\d{4}_\d{2}_\d{2}$/;
+        const latestSheetName = workbook.SheetNames
+            .filter(name => dateSheetRegex.test(name))
+            .sort((a, b) => b.localeCompare(a))
+            [0];
+
+        if (!latestSheetName) {
+            console.error('No forecast sheet with format YYYY_MM_DD found.');
+            return null;
+        }
+
+        const worksheet = workbook.Sheets[latestSheetName];
         const jsonData = xlsx.utils.sheet_to_json(worksheet) as any[];
 
         const data: { [symbol: string]: any } = {};
