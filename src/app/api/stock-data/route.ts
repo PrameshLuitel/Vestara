@@ -135,6 +135,8 @@ async function getForecastData() {
                     ExpSmoothing: [],
                 };
                  const excelDate = row.Date;
+                 // Excel's epoch starts on 1899-12-30 for compatibility reasons (leap year bug in Lotus 1-2-3)
+                 // JavaScript's epoch is 1970-01-01. The difference is 25569 days.
                  const jsDate = new Date(1899, 11, 30);
                  jsDate.setDate(jsDate.getDate() + excelDate);
                  const formattedDate = jsDate.toISOString().split('T')[0];
@@ -175,8 +177,11 @@ export async function GET(request: Request) {
             getForecastData(),
         ]);
         
-        if (!historicalData || !forecastData) {
-            return NextResponse.json({ error: 'Failed to fetch or process external data' }, { status: 500 });
+        if (!historicalData) {
+            return NextResponse.json({ error: 'Failed to fetch or process historical data from Github.' }, { status: 500 });
+        }
+        if (!forecastData) {
+            return NextResponse.json({ error: 'Failed to fetch or process forecast data from Google Sheets.' }, { status: 500 });
         }
         
         const symbolHistorical = historicalData[symbol];
