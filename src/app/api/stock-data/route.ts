@@ -134,9 +134,10 @@ async function getForecastData() {
                     Prophet: [],
                     ExpSmoothing: [],
                 };
-                 const date = new Date(1899, 11, 30);
-                 date.setDate(date.getDate() + row.Date);
-                 const formattedDate = date.toISOString().split('T')[0];
+                 const excelDate = row.Date;
+                 const jsDate = new Date(1899, 11, 30);
+                 jsDate.setDate(jsDate.getDate() + excelDate);
+                 const formattedDate = jsDate.toISOString().split('T')[0];
 
                 data[symbol].Ensemble.push({ date: formattedDate, value: row.Ensemble });
                 data[symbol].EnsembleMedian.push({ date: formattedDate, value: row.EnsembleMedian });
