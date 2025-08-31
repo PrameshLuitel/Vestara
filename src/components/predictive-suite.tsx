@@ -169,15 +169,39 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
 };
 
 export default function PredictiveSuite() {
+    const [symbols, setSymbols] = useState<string[]>([]);
+    const [selectedStock, setSelectedStock] = useState<string>("UPPER");
+    const [stockData, setStockData] = useState<{
+        historical: HistoricalPoint[];
+        forecast: { [key: string]: ForecastPoint[] };
+        latestMetrics: LatestMetrics | null;
+    } | null>(null);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedStock, setSelectedStock] = useState<string>("UPPER");
-    const [symbols, setSymbols] = useState<string[]>(["UPPER"]);
-    const [historicalData, setHistoricalData] = useState<HistoricalPoint[]>([]);
-    const [forecastData, setForecastData] = useState<{ [key: string]: ForecastPoint[] }>({});
-    const [latestMetrics, setLatestMetrics] = useState<LatestMetrics | null>(null);
+    const [initialLoad, setInitialLoad] = useState(true);
 
     useEffect(() => {
+        const fetchSymbols = async () => {
+            try {
+                const res = await fetch(`/api/stock-data?symbol=UPPER`); // Fetch any valid stock to get the symbol list
+                if (!res.ok) {
+                    throw new Error('Failed to fetch symbol list');
+                }
+                const data = await res.json();
+                if (data.symbols) {
+                    setSymbols(data.symbols);
+                }
+            } catch (err: any) {
+                 setError('Could not load stock list. Please refresh the page.');
+            }
+        };
+        fetchSymbols();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedStock) return;
+
         const fetchData = async () => {
             setLoading(true);
             setError(null);
@@ -188,23 +212,24 @@ export default function PredictiveSuite() {
                     throw new Error(errorData.error || `Failed to fetch data for ${selectedStock}`);
                 }
                 const data = await res.json();
-                setHistoricalData(data.historical);
-                setForecastData(data.forecast);
-                setLatestMetrics(data.latest_metrics);
-                if (data.symbols && symbols.length <= 1) {
-                    setSymbols(data.symbols);
-                }
+                setStockData({
+                    historical: data.historical,
+                    forecast: data.forecast,
+                    latestMetrics: data.latest_metrics
+                });
             } catch (err: any) {
                 setError(err.message);
+                setStockData(null);
             } finally {
                 setLoading(false);
+                if(initialLoad) setInitialLoad(false);
             }
         };
 
         fetchData();
-    }, [selectedStock]);
+    }, [selectedStock, initialLoad]);
 
-    if (loading) {
+    if (initialLoad || (loading && !stockData)) {
         return (
             <Card>
                 <CardHeader>
@@ -240,33 +265,6 @@ export default function PredictiveSuite() {
             </Card>
         );
     }
-    
-    if (error) {
-        return (
-             <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline text-2xl">Predictive Analysis</CardTitle>
-                    <CardDescription>An error occurred while fetching data.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Alert variant="destructive">
-                      <AlertTitle>Error</AlertTitle>
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                    <div className="mt-4">
-                        <Select onValueChange={setSelectedStock} defaultValue={selectedStock}>
-                            <SelectTrigger className="w-full sm:w-[180px]">
-                                <SelectValue placeholder="Select a stock" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {symbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-             </Card>
-        )
-    }
 
     return (
         <Card>
@@ -276,48 +274,71 @@ export default function PredictiveSuite() {
                         <CardTitle className="font-headline text-2xl">Predictive Analysis for {selectedStock}</CardTitle>
                         <CardDescription>Historical data and 7-day future price predictions using various AI models.</CardDescription>
                     </div>
-                    <Select onValueChange={setSelectedStock} defaultValue={selectedStock}>
+                    <Select onValueChange={setSelectedStock} defaultValue={selectedStock} disabled={symbols.length === 0}>
                         <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Select a stock" />
                         </SelectTrigger>
                         <SelectContent>
-                            {symbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            {symbols.length > 0 ? (
+                                symbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
+                            ) : (
+                                <SelectItem value="loading" disabled>Loading stocks...</SelectItem>
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
             </CardHeader>
             <CardContent>
-                {latestMetrics && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-                        <MetricCard icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} title="Open" value={formatCurrency(latestMetrics.open)} footer={`High: ${formatCurrency(latestMetrics.high)} / Low: ${formatCurrency(latestMetrics.low)}`}/>
-                        <MetricCard icon={<BarChart className="h-4 w-4 text-muted-foreground" />} title="Volume" value={formatNumber(latestMetrics.vol)} footer={`Turnover: ${formatCurrency(latestMetrics.turnover)}`} />
-                        <MetricCard icon={<Clock className="h-4 w-4 text-muted-foreground" />} title="Previous Close" value={formatCurrency(latestMetrics.prevClose)} footer={`Day Change: ${formatCurrency(latestMetrics.diff)}`} />
-                        <MetricCard icon={<Hash className="h-4 w-4 text-muted-foreground" />} title="Day Range" value={formatCurrency(latestMetrics.range)} footer={`From ${formatCurrency(latestMetrics.low)} to ${formatCurrency(latestMetrics.high)}`}/>
+                 {loading ? (
+                    <div className="text-center p-8">
+                        <p>Loading data for {selectedStock}...</p>
+                    </div>
+                 ) : error ? (
+                    <Alert variant="destructive">
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                 ) : stockData && stockData.historical.length > 0 ? (
+                    <>
+                        {stockData.latestMetrics && (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+                                <MetricCard icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} title="Open" value={formatCurrency(stockData.latestMetrics.open)} footer={`High: ${formatCurrency(stockData.latestMetrics.high)} / Low: ${formatCurrency(stockData.latestMetrics.low)}`}/>
+                                <MetricCard icon={<BarChart className="h-4 w-4 text-muted-foreground" />} title="Volume" value={formatNumber(stockData.latestMetrics.vol)} footer={`Turnover: ${formatCurrency(stockData.latestMetrics.turnover)}`} />
+                                <MetricCard icon={<Clock className="h-4 w-4 text-muted-foreground" />} title="Previous Close" value={formatCurrency(stockData.latestMetrics.prevClose)} footer={`Day Change: ${formatCurrency(stockData.latestMetrics.diff)}`} />
+                                <MetricCard icon={<Hash className="h-4 w-4 text-muted-foreground" />} title="Day Range" value={formatCurrency(stockData.latestMetrics.range)} footer={`From ${formatCurrency(stockData.latestMetrics.low)} to ${formatCurrency(stockData.latestMetrics.high)}`}/>
+                            </div>
+                        )}
+                        <Tabs defaultValue="LSTM" className="w-full">
+                            <div className="overflow-x-auto pb-2">
+                                <TabsList>
+                                    {modelNames.map(modelName => (
+                                        <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
+                                    ))}
+                                    <TabsTrigger value="ensemble-mean">Ensemble Mean</TabsTrigger>
+                                    <TabsTrigger value="ensemble-median">Ensemble Median</TabsTrigger>
+                                </TabsList>
+                            </div>
+                            {modelNames.map(modelName => (
+                                <TabsContent key={modelName} value={modelName} className="mt-4">
+                                    <ModelChart modelName={modelName} historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
+                                </TabsContent>
+                            ))}
+                            <TabsContent value="ensemble-mean" className="mt-4">
+                                <ModelChart modelName="Ensemble Mean" historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
+                            </TabsContent>
+                            <TabsContent value="ensemble-median" className="mt-4">
+                                <ModelChart modelName="Ensemble Median" historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
+                            </TabsContent>
+                        </Tabs>
+                    </>
+                ) : (
+                    <div className="text-center p-8">
+                        <p>No data available for {selectedStock}. Please select another stock.</p>
                     </div>
                 )}
-                <Tabs defaultValue="LSTM" className="w-full">
-                    <div className="overflow-x-auto pb-2">
-                        <TabsList>
-                            {modelNames.map(modelName => (
-                                <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
-                            ))}
-                            <TabsTrigger value="ensemble-mean">Ensemble Mean</TabsTrigger>
-                            <TabsTrigger value="ensemble-median">Ensemble Median</TabsTrigger>
-                        </TabsList>
-                    </div>
-                    {modelNames.map(modelName => (
-                        <TabsContent key={modelName} value={modelName} className="mt-4">
-                            <ModelChart modelName={modelName} historicalData={historicalData} forecastData={forecastData} latestMetrics={latestMetrics} />
-                        </TabsContent>
-                    ))}
-                    <TabsContent value="ensemble-mean" className="mt-4">
-                        <ModelChart modelName="Ensemble Mean" historicalData={historicalData} forecastData={forecastData} latestMetrics={latestMetrics} />
-                    </TabsContent>
-                    <TabsContent value="ensemble-median" className="mt-4">
-                        <ModelChart modelName="Ensemble Median" historicalData={historicalData} forecastData={forecastData} latestMetrics={latestMetrics} />
-                    </TabsContent>
-                </Tabs>
             </CardContent>
         </Card>
     );
 }
+
+    
