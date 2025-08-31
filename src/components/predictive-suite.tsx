@@ -1,235 +1,107 @@
 
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Legend, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import { TrendingUp, TrendingDown, Minus, Info, Briefcase, BarChart, Clock, Hash } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Badge } from './ui/badge';
 
-const generateData = (base: number) => {
-    let data = [];
-    let value = base;
-    for (let i = 1; i <= 20; i++) {
-        data.push({ date: `Day ${i}`, historic: value, predicted: null });
-        value += Math.random() * 4 - 2;
-    }
-    
-    let predictedValue = value;
-    for (let i = 21; i <= 30; i++) {
-        const change = Math.random() * 4 - 2;
-        predictedValue += change;
-        data.push({ date: `Day ${i}`, historic: null, predicted: predictedValue });
-    }
+const modelNames = ["LSTM", "Prophet", "XGBoost", "LightGBM", "Random Forest", "Linear Regression", "Exponential Smoothing"];
+const modelKeys: {[key: string]: string} = {
+    "LSTM": "LSTM",
+    "Prophet": "Prophet",
+    "XGBoost": "XGBoost",
+    "LightGBM": "LightGBM",
+    "Random Forest": "RandomForest",
+    "Linear Regression": "Linear",
+    "Exponential Smoothing": "ExpSmoothing",
+    "Ensemble Mean": "Ensemble",
+    "Ensemble Median": "EnsembleMedian",
+}
 
-    const lastHistoric = data.findLast(p => p.historic !== null);
-    const firstPredicted = data.find(p => p.predicted !== null);
-    if(lastHistoric && firstPredicted) {
-        const bridgePointIndex = data.indexOf(firstPredicted) -1;
-        data[bridgePointIndex].predicted = lastHistoric.historic;
-    }
-
-    return data;
-};
-
-const mockModelData = {
-    "LSTM": {
-        AAPL: { price: "172.50", change: "+1.75 (1.02%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "135.80", change: "-0.55 (0.40%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.60", change: "+0.24 (0.14%)", changeType: "neutral", data: generateData(175) },
-    },
-    "Prophet": {
-        AAPL: { price: "172.45", change: "+1.70 (1.00%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "135.70", change: "-0.65 (0.48%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.50", change: "+0.14 (0.08%)", changeType: "neutral", data: generateData(175) },
-    },
-    "XGBoost": {
-        AAPL: { price: "172.30", change: "+1.55 (0.91%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "135.90", change: "-0.45 (0.33%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.70", change: "+0.34 (0.19%)", changeType: "up", data: generateData(175) },
-    },
-    "LightGBM": {
-        AAPL: { price: "172.60", change: "+1.85 (1.08%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "135.50", change: "-0.85 (0.62%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.40", change: "+0.04 (0.02%)", changeType: "neutral", data: generateData(175) },
-    },
-    "Random Forest": {
-        AAPL: { price: "172.05", change: "+1.30 (0.76%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "136.15", change: "-0.20 (0.15%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.95", change: "+0.59 (0.33%)", changeType: "up", data: generateData(175) },
-    },
-    "Linear Regression": {
-        AAPL: { price: "171.90", change: "+1.15 (0.67%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "136.30", change: "-0.05 (0.04%)", changeType: "neutral", data: generateData(125) },
-        TSLA: { price: "178.50", change: "+1.14 (0.64%)", changeType: "up", data: generateData(175) },
-    },
-    "Exponential Smoothing": {
-        AAPL: { price: "172.70", change: "+1.95 (1.14%)", changeType: "up", data: generateData(155) },
-        GOOGL: { price: "135.40", change: "-0.95 (0.70%)", changeType: "down", data: generateData(125) },
-        TSLA: { price: "177.00", change: "-0.36 (0.20%)", changeType: "down", data: generateData(175) },
-    },
-};
-
-
-type ModelName = keyof typeof mockModelData;
-type StockSymbol = 'AAPL' | 'GOOGL' | 'TSLA';
-
-interface StockData {
-    price: string;
-    change: string;
-    changeType: 'up' | 'down' | 'neutral';
-    data: { date: string; historic: number | null; predicted: number | null }[];
+interface HistoricalPoint {
+    date: string;
+    close: number;
+    open: number;
+    high: number;
+    low: number;
+    vol: number;
+    turnover: number;
+    prevClose: number;
+}
+interface ForecastPoint {
+    date: string;
+    value: number;
+}
+interface LatestMetrics {
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    vol: number;
+    turnover: number;
+    prevClose: number;
+    diff: number;
+    range: number;
 }
 
 const chartConfig = {
-    historic: {
-      label: "Historic",
-      color: "hsl(var(--muted-foreground))",
-    },
-    predicted: {
-      label: "Predicted",
-      color: "hsl(var(--primary))",
-    },
+    historic: { label: "Historic", color: "hsl(var(--muted-foreground))" },
+    predicted: { label: "Predicted", color: "hsl(var(--primary))" },
+};
+
+const formatNumber = (num: number | undefined | null) => {
+    if (num === undefined || num === null) return 'N/A';
+    return new Intl.NumberFormat('en-US').format(num);
+};
+const formatCurrency = (num: number | undefined | null) => {
+    if (num === undefined || num === null) return 'N/A';
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'NPR', minimumFractionDigits: 2 }).format(num).replace('NPR', 'रू').trim();
 };
 
 
-const ModelChart = ({ modelName, modelData }: { modelName: ModelName, modelData: typeof mockModelData[ModelName] }) => {
-    const [selectedStock, setSelectedStock] = useState<StockSymbol>("AAPL");
-    const [loading, setLoading] = useState(false);
-    const [apiData, setApiData] = useState<StockData | null>(null);
+const MetricCard = ({ icon, title, value, footer }: { icon: React.ReactNode, title: string, value: string, footer?: string }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            {icon}
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+            {footer && <p className="text-xs text-muted-foreground">{footer}</p>}
+        </CardContent>
+    </Card>
+)
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            setApiData(null);
-            setTimeout(() => {
-                setLoading(false);
-            }, 500);
-        };
-    }, [modelName, selectedStock]);
-
-    const stock = apiData || modelData[selectedStock];
-
-    const renderChangeIcon = () => {
-        switch (stock.changeType) {
-        case "up":
-            return <TrendingUp className="h-6 w-6 text-green-500" />;
-        case "down":
-            return <TrendingDown className="h-6 w-6 text-red-500" />;
-        default:
-            return <Minus className="h-6 w-6 text-muted-foreground" />;
-        }
-    };
+const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: { modelName: string, historicalData: HistoricalPoint[], forecastData: { [key: string]: ForecastPoint[] }, latestMetrics: LatestMetrics | null }) => {
     
-    if (loading) {
-        return (
-            <div>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <div className="flex items-baseline gap-4">
-                        <Skeleton className="h-10 w-24" />
-                        <Skeleton className="h-6 w-32" />
-                    </div>
-                    <Skeleton className="h-10 w-full sm:w-[180px]" />
-                </div>
-                <Skeleton className="w-full h-[400px]" />
-            </div>
-        )
-    }
+    const modelKey = modelKeys[modelName];
+    const modelForecast = forecastData[modelKey] || [];
 
-    return (
-        <div>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                 <div className="flex items-baseline gap-4">
-                    <h2 className="text-4xl font-bold">{stock.price}</h2>
-                    <p className={`font-semibold ${stock.changeType === 'up' ? 'text-green-500' : stock.changeType === 'down' ? 'text-red-500' : 'text-muted-foreground'}`}>
-                        {stock.change}
-                    </p>
-                    {renderChangeIcon()}
-                </div>
-                <Select onValueChange={(value) => setSelectedStock(value as StockSymbol)} defaultValue={selectedStock}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="Select a stock" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="AAPL">Apple (AAPL)</SelectItem>
-                        <SelectItem value="GOOGL">Google (GOOGL)</SelectItem>
-                        <SelectItem value="TSLA">Tesla (TSLA)</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <ChartContainer config={chartConfig} className="w-full h-[400px]">
-                <AreaChart data={stock.data}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                        <linearGradient id="colorHistoric" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="var(--color-historic)" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="var(--color-historic)" stopOpacity={0}/>
-                        </linearGradient>
-                        <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="var(--color-predicted)" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="var(--color-predicted)" stopOpacity={0}/>
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} hide />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Area type="monotone" dataKey="historic" stroke="var(--color-historic)" fillOpacity={1} fill="url(#colorHistoric)" strokeWidth={2} connectNulls />
-                    <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} connectNulls />
-                </AreaChart>
-            </ChartContainer>
-        </div>
-    );
-};
+    const chartData = useMemo(() => {
+        const data = historicalData.map(p => ({ date: p.date, historic: p.close, predicted: null }));
+        const lastHistoric = data[data.length - 1];
 
-const SummaryChart = ({ type }: { type: 'mean' | 'median' }) => {
-    const [selectedStock, setSelectedStock] = useState<StockSymbol>("AAPL");
-
-    const getSummaryData = (stock: StockSymbol) => {
-        const models = Object.values(mockModelData);
-        const referenceData = models[0][stock].data; 
-        
-        const summaryData = referenceData.map((point, index) => {
-            const newPoint = { date: point.date, historic: point.historic, predicted: null as number | null };
-            if (point.predicted !== null) {
-                const predictedValues = models.map(model => model[stock].data[index]?.predicted).filter(p => p !== null && p !== undefined) as number[];
-                if (predictedValues.length > 0) {
-                    if (type === 'mean') {
-                        const predictedSum = predictedValues.reduce((sum, value) => sum + value, 0);
-                        newPoint.predicted = predictedSum / predictedValues.length;
-                    } else { // median
-                        const sorted = [...predictedValues].sort((a, b) => a - b);
-                        const mid = Math.floor(sorted.length / 2);
-                        newPoint.predicted = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-                    }
-                }
-            }
-            return newPoint;
-        });
-
-        const lastHistoric = summaryData.findLast(p => p.historic !== null);
-        const firstPredictedIndex = summaryData.findIndex(p => p.predicted !== null);
-        if (lastHistoric && firstPredictedIndex > 0) {
-            summaryData[firstPredictedIndex - 1].predicted = lastHistoric.historic;
+        if (modelForecast.length > 0 && lastHistoric) {
+            const bridgePoint = { date: lastHistoric.date, historic: lastHistoric.historic, predicted: lastHistoric.historic };
+            const forecastPoints = modelForecast.map(p => ({ date: p.date, historic: null, predicted: p.value }));
+            return [...data, bridgePoint, ...forecastPoints];
         }
+        return data;
+    }, [historicalData, modelForecast]);
 
-        return summaryData;
-    }
+    const lastPrediction = modelForecast.length > 0 ? modelForecast[modelForecast.length - 1].value : null;
+    const lastHistoricClose = latestMetrics?.close ?? 0;
 
-    const summaryData = getSummaryData(selectedStock);
-    const lastPrediction = summaryData[summaryData.length - 1].predicted;
-    const firstPredictionPoint = summaryData.find(p => p.predicted !== null);
-    const firstPrediction = firstPredictionPoint?.predicted || 0;
-    const lastHistoricPoint = summaryData.findLast(p => p.historic !== null);
-    const lastHistoric = lastHistoricPoint?.historic || 0;
-    
-    const priceChange = lastPrediction ? lastPrediction - lastHistoric : 0;
-    const percentageChange = lastHistoric !== 0 ? (priceChange / lastHistoric) * 100 : 0;
-    const changeType = priceChange > 0.05 ? 'up' : priceChange < -0.05 ? 'down' : 'neutral';
+    const priceChange = lastPrediction !== null ? lastPrediction - lastHistoricClose : 0;
+    const percentageChange = lastHistoricClose !== 0 ? (priceChange / lastHistoricClose) * 100 : 0;
+    const changeType = percentageChange > 0.05 ? 'up' : percentageChange < -0.05 ? 'down' : 'neutral';
 
     const renderChangeIcon = () => {
         switch (changeType) {
@@ -238,36 +110,25 @@ const SummaryChart = ({ type }: { type: 'mean' | 'median' }) => {
             default: return <Minus className="h-6 w-6 text-muted-foreground" />;
         }
     };
-    
-    const analysisText = type === 'mean' 
-        ? `The aggregated forecast for ${selectedStock} suggests a ${changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook. By averaging the predictions of ${Object.keys(mockModelData).length} different AI models, the consensus points towards a price of approximately $${lastPrediction ? lastPrediction.toFixed(2) : 'N/A'} in the next 10 days.`
-        : `The median forecast for ${selectedStock} suggests a ${changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook. By taking the median prediction from ${Object.keys(mockModelData).length} different AI models, which reduces the impact of outliers, the consensus points to a price of approximately $${lastPrediction ? lastPrediction.toFixed(2) : 'N/A'} in the next 10 days.`;
-
 
     return (
-         <div>
+        <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div className="flex items-baseline gap-4">
-                    <h2 className="text-4xl font-bold">{lastPrediction ? lastPrediction.toFixed(2) : '...'}</h2>
-                     <p className={`font-semibold ${changeType === 'up' ? 'text-green-500' : changeType === 'down' ? 'text-red-500' : 'text-muted-foreground'}`}>
-                        {priceChange.toFixed(2)} ({percentageChange.toFixed(2)}%)
-                    </p>
-                    {renderChangeIcon()}
+                    <h2 className="text-4xl font-bold">{lastPrediction !== null ? formatCurrency(lastPrediction) : formatCurrency(latestMetrics?.close)}</h2>
+                    {lastPrediction !== null && (
+                         <p className={`font-semibold ${changeType === 'up' ? 'text-green-500' : changeType === 'down' ? 'text-red-500' : 'text-muted-foreground'}`}>
+                            {priceChange.toFixed(2)} ({percentageChange.toFixed(2)}%)
+                        </p>
+                    )}
+                    {lastPrediction !== null && renderChangeIcon()}
                 </div>
-                <Select onValueChange={(value) => setSelectedStock(value as StockSymbol)} defaultValue={selectedStock}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="Select a stock" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="AAPL">Apple (AAPL)</SelectItem>
-                        <SelectItem value="GOOGL">Google (GOOGL)</SelectItem>
-                        <SelectItem value="TSLA">Tesla (TSLA)</SelectItem>
-                    </SelectContent>
-                </Select>
+                 <Badge variant={lastPrediction !== null ? "default" : "secondary"}>
+                    {lastPrediction !== null ? "Forecasted Price" : "Last Closing Price"}
+                </Badge>
             </div>
             <ChartContainer config={chartConfig} className="w-full h-[400px]">
-                <AreaChart data={summaryData}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                         <linearGradient id="colorHistoric" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="var(--color-historic)" stopOpacity={0.4}/>
@@ -279,7 +140,7 @@ const SummaryChart = ({ type }: { type: 'mean' | 'median' }) => {
                         </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8}tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
                     <YAxis domain={['dataMin - 10', 'dataMax + 10']} hide />
                     <Tooltip content={<ChartTooltipContent />} />
                     <ChartLegend content={<ChartLegendContent />} />
@@ -287,62 +148,176 @@ const SummaryChart = ({ type }: { type: 'mean' | 'median' }) => {
                     <Area type="monotone" dataKey="predicted" stroke="var(--color-predicted)" fillOpacity={1} fill="url(#colorPredicted)" strokeDasharray="5 5" strokeWidth={2} connectNulls />
                 </AreaChart>
             </ChartContainer>
-            <Card className="mt-6">
-                <CardHeader className="flex flex-row items-center gap-2">
-                    <Info className="h-5 w-5" />
-                    <CardTitle>Summary Analysis</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground">
-                        {analysisText} This represents a potential {changeType !== 'neutral' ? `${percentageChange.toFixed(2)}%` : ''} change from the last known price of ${lastHistoric.toFixed(2)}.
-                    </p>
-                </CardContent>
-            </Card>
-             <div className="mt-4 text-center">
-                <p className="text-xs text-muted-foreground">
-                    *This is the summary of all the other predictive models.
-                </p>
-            </div>
+            
+             {modelName.includes("Ensemble") && latestMetrics && (
+                 <Card className="mt-6">
+                    <CardHeader className="flex flex-row items-center gap-2">
+                        <Info className="h-5 w-5" />
+                        <CardTitle>Summary Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            The aggregated {modelName.toLowerCase()} forecast suggests a {changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook.
+                            The consensus points towards a price of approximately {formatCurrency(lastPrediction)} in the next 7 days.
+                            This represents a potential {changeType !== 'neutral' ? `${percentageChange.toFixed(2)}%` : ''} change from the last known price of {formatCurrency(latestMetrics.close)}.
+                        </p>
+                    </CardContent>
+                </Card>
+             )}
         </div>
     );
 };
 
-
 export default function PredictiveSuite() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline text-2xl">Predictive Analysis</CardTitle>
-        <CardDescription>Historical data and future price predictions using various AI models.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="LSTM" className="w-full">
-          <div className="overflow-x-auto pb-2">
-            <TabsList>
-              {Object.keys(mockModelData).map(modelName => (
-                  <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
-              ))}
-              <TabsTrigger value="ensemble-mean">Ensemble Mean*</TabsTrigger>
-              <TabsTrigger value="ensemble-median">Ensemble Median*</TabsTrigger>
-            </TabsList>
-          </div>
-          {Object.entries(mockModelData).map(([modelName, modelData]) => (
-            <TabsContent key={modelName} value={modelName} className="mt-4">
-              <ModelChart modelName={modelName as ModelName} modelData={modelData as any} />
-            </TabsContent>
-          ))}
-          <TabsContent value="ensemble-mean" className="mt-4">
-              <SummaryChart type="mean" />
-          </TabsContent>
-          <TabsContent value="ensemble-median" className="mt-4">
-              <SummaryChart type="median" />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
-  );
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedStock, setSelectedStock] = useState<string>("UPPER");
+    const [symbols, setSymbols] = useState<string[]>(["UPPER"]);
+    const [historicalData, setHistoricalData] = useState<HistoricalPoint[]>([]);
+    const [forecastData, setForecastData] = useState<{ [key: string]: ForecastPoint[] }>({});
+    const [latestMetrics, setLatestMetrics] = useState<LatestMetrics | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await fetch(`/api/stock-data?symbol=${selectedStock}`);
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || `Failed to fetch data for ${selectedStock}`);
+                }
+                const data = await res.json();
+                setHistoricalData(data.historical);
+                setForecastData(data.forecast);
+                setLatestMetrics(data.latest_metrics);
+                if (data.symbols && symbols.length <= 1) {
+                    setSymbols(data.symbols);
+                }
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [selectedStock]);
+
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-3/5" />
+                    <Skeleton className="h-4 w-4/5" />
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-6">
+                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                             <div className="flex items-baseline gap-4">
+                                <Skeleton className="h-10 w-24" />
+                                <Skeleton className="h-6 w-32" />
+                            </div>
+                            <Skeleton className="h-10 w-full sm:w-[180px]" />
+                         </div>
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            {[...Array(4)].map((_, i) => (
+                                <Card key={i}>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <Skeleton className="h-5 w-20" />
+                                        <Skeleton className="h-6 w-6" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Skeleton className="h-8 w-24" />
+                                        <Skeleton className="h-3 w-28 mt-2" />
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                        <Skeleton className="w-full h-[400px]" />
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    if (error) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl">Predictive Analysis</CardTitle>
+                    <CardDescription>An error occurred while fetching data.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Alert variant="destructive">
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                    <div className="mt-4">
+                        <Select onValueChange={setSelectedStock} defaultValue={selectedStock}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Select a stock" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {symbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </CardContent>
+             </Card>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <CardTitle className="font-headline text-2xl">Predictive Analysis for {selectedStock}</CardTitle>
+                        <CardDescription>Historical data and 7-day future price predictions using various AI models.</CardDescription>
+                    </div>
+                    <Select onValueChange={setSelectedStock} defaultValue={selectedStock}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Select a stock" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {symbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {latestMetrics && (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+                        <MetricCard icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} title="Open" value={formatCurrency(latestMetrics.open)} footer={`High: ${formatCurrency(latestMetrics.high)} / Low: ${formatCurrency(latestMetrics.low)}`}/>
+                        <MetricCard icon={<BarChart className="h-4 w-4 text-muted-foreground" />} title="Volume" value={formatNumber(latestMetrics.vol)} footer={`Turnover: ${formatCurrency(latestMetrics.turnover)}`} />
+                        <MetricCard icon={<Clock className="h-4 w-4 text-muted-foreground" />} title="Previous Close" value={formatCurrency(latestMetrics.prevClose)} footer={`Day Change: ${formatCurrency(latestMetrics.diff)}`} />
+                        <MetricCard icon={<Hash className="h-4 w-4 text-muted-foreground" />} title="Day Range" value={formatCurrency(latestMetrics.range)} footer={`From ${formatCurrency(latestMetrics.low)} to ${formatCurrency(latestMetrics.high)}`}/>
+                    </div>
+                )}
+                <Tabs defaultValue="LSTM" className="w-full">
+                    <div className="overflow-x-auto pb-2">
+                        <TabsList>
+                            {modelNames.map(modelName => (
+                                <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
+                            ))}
+                            <TabsTrigger value="ensemble-mean">Ensemble Mean</TabsTrigger>
+                            <TabsTrigger value="ensemble-median">Ensemble Median</TabsTrigger>
+                        </TabsList>
+                    </div>
+                    {modelNames.map(modelName => (
+                        <TabsContent key={modelName} value={modelName} className="mt-4">
+                            <ModelChart modelName={modelName} historicalData={historicalData} forecastData={forecastData} latestMetrics={latestMetrics} />
+                        </TabsContent>
+                    ))}
+                    <TabsContent value="ensemble-mean" className="mt-4">
+                        <ModelChart modelName="Ensemble Mean" historicalData={historicalData} forecastData={forecastData} latestMetrics={latestMetrics} />
+                    </TabsContent>
+                    <TabsContent value="ensemble-median" className="mt-4">
+                        <ModelChart modelName="Ensemble Median" historicalData={historicalData} forecastData={forecastData} latestMetrics={latestMetrics} />
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+        </Card>
+    );
 }
-
-    
-
-    
