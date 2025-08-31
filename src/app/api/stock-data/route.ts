@@ -89,26 +89,35 @@ async function getHistoricalData() {
 }
 
 async function getForecastData() {
-     const now = Date.now();
+    const now = Date.now();
     if (CACHE.forecast && (now - CACHE.lastFetch < CACHE_DURATION)) {
         return CACHE.forecast;
     }
 
-    const forecastUrl = 'https://docs.google.com/spreadsheets/d/1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk/export?format=xlsx';
+    const spreadsheetId = '1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk';
+    const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
+
+    if (!apiKey) {
+        console.error('Google Sheets API key is not configured.');
+        return null;
+    }
 
     try {
-        const response = await fetch(forecastUrl, { next: { revalidate: 3600 } });
-         if (!response.ok) {
-            console.error(`Failed to fetch forecast data workbook. Status: ${response.status}`);
+        // 1. Fetch spreadsheet metadata to get all sheet names
+        const sheetMetaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
+        const metaResponse = await fetch(sheetMetaUrl, { next: { revalidate: 3600 } });
+        if (!metaResponse.ok) {
+            console.error(`Failed to fetch Google Sheets metadata. Status: ${metaResponse.status}`);
             return null;
         }
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = xlsx.read(arrayBuffer, { type: 'buffer' });
+        const metaData = await metaResponse.json();
         
+        // 2. Find the latest sheet name with the format YYYY_MM_DD
         const dateSheetRegex = /^\d{4}_\d{2}_\d{2}$/;
-        const latestSheetName = workbook.SheetNames
-            .filter(name => dateSheetRegex.test(name))
-            .sort((a, b) => b.localeCompare(a))
+        const latestSheetName = metaData.sheets
+            .map((sheet: any) => sheet.properties.title)
+            .filter((name: string) => dateSheetRegex.test(name))
+            .sort((a: string, b: string) => b.localeCompare(a))
             [0];
 
         if (!latestSheetName) {
@@ -116,48 +125,52 @@ async function getForecastData() {
             return null;
         }
 
-        const worksheet = workbook.Sheets[latestSheetName];
-        const jsonData = xlsx.utils.sheet_to_json(worksheet) as any[];
+        // 3. Fetch data from the latest sheet
+        const dataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${latestSheetName}?key=${apiKey}`;
+        const dataResponse = await fetch(dataUrl, { next: { revalidate: 3600 } });
+        if (!dataResponse.ok) {
+            console.error(`Failed to fetch data from sheet ${latestSheetName}. Status: ${dataResponse.status}`);
+            return null;
+        }
+        const sheetData = await dataResponse.json();
 
+        // 4. Process the JSON data
+        const headers = sheetData.values[0];
+        const rows = sheetData.values.slice(1);
+        
         const data: { [symbol: string]: any } = {};
-        jsonData.forEach(row => {
-            const symbol = row.Symbol;
-            if (symbol) {
-                if (!data[symbol]) data[symbol] = {
-                    Ensemble: [],
-                    EnsembleMedian: [],
-                    XGBoost: [],
-                    LightGBM: [],
-                    RandomForest: [],
-                    Linear: [],
-                    LSTM: [],
-                    Prophet: [],
-                    ExpSmoothing: [],
-                };
-                 const excelDate = row.Date;
-                 // Excel's epoch starts on 1899-12-30 for compatibility reasons (leap year bug in Lotus 1-2-3)
-                 // JavaScript's epoch is 1970-01-01. The difference is 25569 days.
-                 const jsDate = new Date(1899, 11, 30);
-                 jsDate.setDate(jsDate.getDate() + excelDate);
-                 const formattedDate = jsDate.toISOString().split('T')[0];
+        rows.forEach((row: any[]) => {
+            const rowData: { [key: string]: any } = {};
+            headers.forEach((header: string, index: number) => {
+                rowData[header] = row[index];
+            });
 
-                data[symbol].Ensemble.push({ date: formattedDate, value: row.Ensemble });
-                data[symbol].EnsembleMedian.push({ date: formattedDate, value: row.EnsembleMedian });
-                data[symbol].XGBoost.push({ date: formattedDate, value: row.XGBoost });
-                data[symbol].LightGBM.push({ date: formattedDate, value: row.LightGBM });
-                data[symbol].RandomForest.push({ date: formattedDate, value: row.RandomForest });
-                data[symbol].Linear.push({ date: formattedDate, value: row.Linear });
-                data[symbol].LSTM.push({ date: formattedDate, value: row.LSTM });
-                data[symbol].Prophet.push({ date: formattedDate, value: row.Prophet });
-                data[symbol].ExpSmoothing.push({ date: formattedDate, value: row.ExpSmoothing });
+            const symbol = rowData.Symbol;
+            if (symbol) {
+                if (!data[symbol]) {
+                    data[symbol] = {
+                        Ensemble: [], EnsembleMedian: [], XGBoost: [], LightGBM: [],
+                        RandomForest: [], Linear: [], LSTM: [], Prophet: [], ExpSmoothing: [],
+                    };
+                }
+
+                // Correctly convert Excel date serial number to YYYY-MM-DD
+                const excelDate = parseFloat(rowData.Date);
+                const jsDate = new Date(1899, 11, 30);
+                jsDate.setDate(jsDate.getDate() + excelDate);
+                const formattedDate = jsDate.toISOString().split('T')[0];
+                
+                Object.keys(data[symbol]).forEach(modelKey => {
+                     data[symbol][modelKey].push({ date: formattedDate, value: parseFloat(rowData[modelKey]) });
+                });
             }
         });
-        
+
         CACHE.forecast = data;
         return data;
 
     } catch (error) {
-        console.error('Error fetching or processing forecast data:', error);
+        console.error('Error fetching or processing forecast data from Google Sheets API:', error);
         return null;
     }
 }
@@ -205,3 +218,5 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
     }
 }
+
+    
