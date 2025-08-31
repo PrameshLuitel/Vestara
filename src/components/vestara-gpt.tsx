@@ -15,10 +15,10 @@ interface Message {
 }
 
 const examplePrompts = [
-    { title: "Query Financial Regulations", prompt: "Explain the liquidity requirements for commercial banks in Nepal." },
-    { title: "Analyze Market Indices", prompt: "What is the sentiment-adjusted forecast for the NEPSE index?" },
-    { title: "Define a Compliance Term", prompt: "What constitutes 'insider trading' under Nepalese securities law?" },
-    { title: "Compare Sector Performance", prompt: "Compare the 10-day volatility forecast for the Banking vs. Hydropower sub-indices." }
+    { title: "Query Compliance", prompt: "What are the SEBON regulations regarding IPO issuance for a private company?" },
+    { title: "Analyze Market Operations", prompt: "Explain the workflow for rights share application in Nepal." },
+    { title: "Define a Financial Term", prompt: "What constitutes 'insider trading' under Nepalese securities law?" },
+    { title: "Strategic Inquiry", prompt: "Summarize the key compliance checkpoints for a new mutual fund scheme." }
 ]
 
 const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -39,7 +39,7 @@ export default function VestaraGpt() {
     const userMessage: Message = { id: generateUniqueId(), text: textToSend, sender: 'user' };
     
     setMessages(prev => {
-        const currentMessages = prev.length > 0 ? prev : [{ id: generateUniqueId(), text: "I am Vestara, your regulatory and market intelligence co-pilot. Built on a custom knowledge base with enhanced RAG, I provide precise, context-aware answers for Nepal's financial markets. How can I assist?", sender: 'bot' }];
+        const currentMessages = prev.length > 0 ? prev : [{ id: generateUniqueId(), text: "I am Vestara GPT, your real-time regulatory and strategy assistant. Trained on SEBON and NEPSE regulations and the workflows of investment banking in Nepal, I provide precise, context-aware answers. How can I assist?", sender: 'bot' }];
         return [...currentMessages, userMessage];
     });
   
@@ -57,8 +57,8 @@ export default function VestaraGpt() {
       <div className="flex-1 overflow-y-auto pr-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <h1 className="text-4xl font-bold font-headline mb-2">Vestara Gpt</h1>
-            <p className="text-muted-foreground mb-8">AI co-pilot for Nepal's financial ecosystem, grounded by a custom RAG process for accuracy.</p>
+            <h1 className="text-4xl font-bold font-headline mb-2">Vestara GPT</h1>
+            <p className="text-muted-foreground mb-8">The Domain-Trained AI Assistant for Nepal's financial ecosystem.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
                 {examplePrompts.map(ex => (
                     <Card key={ex.title} className="hover:bg-accent transition-colors cursor-pointer text-left" onClick={() => handleSend(ex.prompt)}>

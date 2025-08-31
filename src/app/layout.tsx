@@ -33,6 +33,9 @@ export default function RootLayout({
               {children}
             </main>
             <footer className="w-full py-4 px-8 text-center">
+              <p className="text-xs text-muted-foreground mb-1">
+                Status: Under active development. Planned Launch: Q3 2025.
+              </p>
               <p className="text-xs text-muted-foreground">
                 All content is AI-based. Do not take it as financial advice. This is for educational, testing, and research purposes only.
               </p>
