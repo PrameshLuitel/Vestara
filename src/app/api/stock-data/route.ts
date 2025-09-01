@@ -155,9 +155,11 @@ async function getForecastData() {
                 }
 
                 // Correctly convert Excel date serial number to YYYY-MM-DD
-                // The numeric value represents days since 1899-12-30.
+                // JavaScript's Date object treats the epoch as 1970-01-01, while Excel's is 1900-01-01.
+                // The conversion is (excelDate - 25569) * 86400 * 1000.
                 const excelDate = parseFloat(rowData.Date);
-                const jsDate = new Date(1899, 11, 30 + excelDate);
+                const jsTimestamp = (excelDate - 25569) * 86400 * 1000;
+                const jsDate = new Date(jsTimestamp);
                 const formattedDate = jsDate.toISOString().split('T')[0];
                 
                 Object.keys(data[symbol]).forEach(modelKey => {
