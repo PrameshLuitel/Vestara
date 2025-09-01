@@ -95,7 +95,7 @@ async function getForecastData() {
     }
 
     const spreadsheetId = '1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk';
-    const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
+    const apiKey = process.env.GOOGLE_SHEETS_API_KEY; // IMPORTANT: Use environment variable for API key
 
     if (!apiKey) {
         console.error('Google Sheets API key is not configured.');
@@ -134,6 +134,11 @@ async function getForecastData() {
         }
         const sheetData = await dataResponse.json();
 
+        if (!sheetData.values || sheetData.values.length < 2) {
+             console.error('Sheet contains no data or only a header row.');
+             return null;
+        }
+
         // 4. Process the JSON data
         const headers = sheetData.values[0];
         const rows = sheetData.values.slice(1);
@@ -155,15 +160,22 @@ async function getForecastData() {
                 }
 
                 // Correctly convert Excel date serial number to YYYY-MM-DD
-                // JavaScript's Date object treats the epoch as 1970-01-01, while Excel's is 1900-01-01.
+                // JavaScript's Date object treats the epoch as 1970-01-01, while Excel's is 1900-01-01 (with a bug for 1900 being a leap year).
                 // The conversion is (excelDate - 25569) * 86400 * 1000.
                 const excelDate = parseFloat(rowData.Date);
+                if (isNaN(excelDate)) return; // Skip if date is not a number
+
+                // Excel's epoch is 1899-12-30, not 1900-01-01, due to a leap year bug.
+                // JS epoch is 1970-01-01. Days between: 25569.
                 const jsTimestamp = (excelDate - 25569) * 86400 * 1000;
                 const jsDate = new Date(jsTimestamp);
                 const formattedDate = jsDate.toISOString().split('T')[0];
                 
                 Object.keys(data[symbol]).forEach(modelKey => {
-                     data[symbol][modelKey].push({ date: formattedDate, value: parseFloat(rowData[modelKey]) });
+                     const value = parseFloat(rowData[modelKey]);
+                     if (!isNaN(value)) {
+                        data[symbol][modelKey].push({ date: formattedDate, value: value });
+                     }
                 });
             }
         });
