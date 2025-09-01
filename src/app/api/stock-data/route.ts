@@ -144,14 +144,19 @@ async function getForecastData() {
         const rows = sheetData.values.slice(1);
         
         const data: { [symbol: string]: any } = {};
-        rows.forEach((row: any[]) => {
-            const rowData: { [key: string]: any } = {};
-            headers.forEach((header: string, index: number) => {
-                rowData[header] = row[index];
-            });
+        
+        const symbolIndex = headers.indexOf('Symbol');
+        const dateIndex = headers.indexOf('Date');
+        if (symbolIndex === -1 || dateIndex === -1) {
+            console.error('Sheet must contain "Symbol" and "Date" columns.');
+            return null;
+        }
 
-            const symbol = rowData.Symbol;
-            if (symbol) {
+        rows.forEach((row: any[]) => {
+            const symbol = row[symbolIndex];
+            const excelDate = parseFloat(row[dateIndex]);
+
+            if (symbol && !isNaN(excelDate)) {
                 if (!data[symbol]) {
                     data[symbol] = {
                         Ensemble: [], EnsembleMedian: [], XGBoost: [], LightGBM: [],
@@ -160,22 +165,18 @@ async function getForecastData() {
                 }
 
                 // Correctly convert Excel date serial number to YYYY-MM-DD
-                // JavaScript's Date object treats the epoch as 1970-01-01, while Excel's is 1900-01-01 (with a bug for 1900 being a leap year).
-                // The conversion is (excelDate - 25569) * 86400 * 1000.
-                const excelDate = parseFloat(rowData.Date);
-                if (isNaN(excelDate)) return; // Skip if date is not a number
-
-                // Excel's epoch is 1899-12-30, not 1900-01-01, due to a leap year bug.
-                // JS epoch is 1970-01-01. Days between: 25569.
                 const jsTimestamp = (excelDate - 25569) * 86400 * 1000;
                 const jsDate = new Date(jsTimestamp);
                 const formattedDate = jsDate.toISOString().split('T')[0];
                 
                 Object.keys(data[symbol]).forEach(modelKey => {
-                     const value = parseFloat(rowData[modelKey]);
-                     if (!isNaN(value)) {
-                        data[symbol][modelKey].push({ date: formattedDate, value: value });
-                     }
+                    const headerIndex = headers.indexOf(modelKey);
+                    if (headerIndex !== -1) {
+                         const value = parseFloat(row[headerIndex]);
+                         if (!isNaN(value)) {
+                            data[symbol][modelKey].push({ date: formattedDate, value: value });
+                         }
+                    }
                 });
             }
         });

@@ -6,11 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Info, Briefcase, BarChart, Clock, Hash } from 'lucide-react';
+import { Area, AreaChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import { TrendingUp, TrendingDown, Minus, Info, Briefcase, BarChart, Clock, Hash, Search } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Badge } from './ui/badge';
+import { Input } from './ui/input';
 
 const modelNames = ["LSTM", "Prophet", "XGBoost", "LightGBM", "Random Forest", "Linear Regression", "Exponential Smoothing"];
 const modelKeys: {[key: string]: string} = {
@@ -51,9 +52,19 @@ interface LatestMetrics {
     range: number;
 }
 
-const chartConfig = {
+const chartConfigSingle = {
     historic: { label: "Historic", color: "hsl(var(--muted-foreground))" },
     predicted: { label: "Predicted", color: "hsl(var(--primary))" },
+};
+const chartConfigAll = {
+    historic: { label: "Historic", color: "hsl(var(--muted-foreground))" },
+    LSTM: { label: "LSTM", color: "hsl(var(--chart-1))" },
+    Prophet: { label: "Prophet", color: "hsl(var(--chart-2))" },
+    XGBoost: { label: "XGBoost", color: "hsl(var(--chart-3))" },
+    LightGBM: { label: "LightGBM", color: "hsl(var(--chart-4))" },
+    RandomForest: { label: "Random Forest", color: "hsl(var(--chart-5))" },
+    Linear: { label: "Linear", color: "hsl(var(--accent))" },
+    ExpSmoothing: { label: "Exp. Smoothing", color: "hsl(var(--foreground))" },
 };
 
 const formatNumber = (num: number | undefined | null) => {
@@ -127,7 +138,7 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
                     {lastPrediction !== null ? "Forecasted Price" : "Last Closing Price"}
                 </Badge>
             </div>
-            <ChartContainer config={chartConfig} className="w-full h-[400px]">
+            <ChartContainer config={chartConfigSingle} className="w-full h-[400px]">
                 <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                         <linearGradient id="colorHistoric" x1="0" y1="0" x2="0" y2="1">
@@ -168,9 +179,69 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
     );
 };
 
+const AllModelsChart = ({ historicalData, forecastData }: { historicalData: HistoricalPoint[], forecastData: { [key: string]: ForecastPoint[] } }) => {
+    const chartData = useMemo(() => {
+        let combinedData: any[] = historicalData.map(p => ({ date: p.date, historic: p.close }));
+
+        const lastHistoric = combinedData[combinedData.length - 1];
+        if (!lastHistoric) return combinedData;
+
+        // Create a map for quick date lookups
+        const dateMap = new Map(combinedData.map(p => [p.date, p]));
+        
+        Object.entries(forecastData).forEach(([modelKey, modelPoints]) => {
+            if (!modelKeys[modelKey as keyof typeof modelKeys]) { // Skip Ensemble models for clarity
+                 // Use the modelKey directly if it's one of the base models like "LSTM", "Prophet", etc.
+                const validModelKey = Object.keys(modelKeys).find(k => modelKeys[k] === modelKey);
+                if (validModelKey) {
+                    const bridgePoint = { date: lastHistoric.date, [modelKey]: lastHistoric.historic };
+                    if (dateMap.has(bridgePoint.date)) {
+                        Object.assign(dateMap.get(bridgePoint.date)!, { [modelKey]: bridgePoint[modelKey] });
+                    }
+
+                    modelPoints.forEach(p => {
+                        if (dateMap.has(p.date)) {
+                            Object.assign(dateMap.get(p.date)!, { [modelKey]: p.value });
+                        } else {
+                            dateMap.set(p.date, { date: p.date, [modelKey]: p.value });
+                        }
+                    });
+                }
+            }
+        });
+        
+        return Array.from(dateMap.values()).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [historicalData, forecastData]);
+
+    return (
+         <div>
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold">All Models Forecast Comparison</h2>
+                <p className="text-muted-foreground">Comparative view of all predictive models against historical data.</p>
+            </div>
+            <ChartContainer config={chartConfigAll} className="w-full h-[400px]">
+                <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
+                    <YAxis domain={['dataMin - 20', 'dataMax + 20']} hide />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Line type="monotone" dataKey="historic" stroke="var(--color-historic)" strokeWidth={2} dot={false} />
+                    {Object.values(modelKeys).filter(k => k !== 'Ensemble' && k !== 'EnsembleMedian').map((key) => (
+                        <Line key={key} type="monotone" dataKey={key} stroke={`var(--color-${key})`} strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls />
+                    ))}
+                </LineChart>
+            </ChartContainer>
+        </div>
+    );
+};
+
+
 export default function PredictiveSuite() {
     const [symbols, setSymbols] = useState<string[]>([]);
+    const [filteredSymbols, setFilteredSymbols] = useState<string[]>([]);
     const [selectedStock, setSelectedStock] = useState<string>("UPPER");
+    const [searchQuery, setSearchQuery] = useState("");
     const [stockData, setStockData] = useState<{
         historical: HistoricalPoint[];
         forecast: { [key: string]: ForecastPoint[] };
@@ -184,13 +255,14 @@ export default function PredictiveSuite() {
     useEffect(() => {
         const fetchSymbols = async () => {
             try {
-                const res = await fetch(`/api/stock-data?symbol=UPPER`); // Fetch any valid stock to get the symbol list
+                const res = await fetch(`/api/stock-data?symbol=UPPER`); 
                 if (!res.ok) {
                     throw new Error('Failed to fetch symbol list');
                 }
                 const data = await res.json();
                 if (data.symbols) {
                     setSymbols(data.symbols);
+                    setFilteredSymbols(data.symbols);
                 }
             } catch (err: any) {
                  setError('Could not load stock list. Please refresh the page.');
@@ -228,8 +300,15 @@ export default function PredictiveSuite() {
 
         fetchData();
     }, [selectedStock, initialLoad]);
+    
+    useEffect(() => {
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        setFilteredSymbols(
+            symbols.filter(s => s.toLowerCase().includes(lowerCaseQuery))
+        );
+    }, [searchQuery, symbols]);
 
-    if (initialLoad || (loading && !stockData)) {
+    if (initialLoad || (loading && !stockData && !error)) {
         return (
             <Card>
                 <CardHeader>
@@ -269,23 +348,34 @@ export default function PredictiveSuite() {
     return (
         <Card>
             <CardHeader>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <CardTitle className="font-headline text-2xl">Predictive Analysis for {selectedStock}</CardTitle>
                         <CardDescription>Historical data and 7-day future price predictions using various AI models.</CardDescription>
                     </div>
-                    <Select onValueChange={setSelectedStock} defaultValue={selectedStock} disabled={symbols.length === 0}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Select a stock" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {symbols.length > 0 ? (
-                                symbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
-                            ) : (
-                                <SelectItem value="loading" disabled>Loading stocks...</SelectItem>
-                            )}
-                        </SelectContent>
-                    </Select>
+                    <div className="w-full sm:w-auto flex flex-col gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                placeholder="Search symbol..."
+                                className="w-full sm:w-[180px] pl-8"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <Select onValueChange={setSelectedStock} defaultValue={selectedStock} disabled={symbols.length === 0}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Select a stock" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {filteredSymbols.length > 0 ? (
+                                    filteredSymbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
+                                ) : (
+                                    <SelectItem value="no-results" disabled>No symbols found</SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -308,9 +398,10 @@ export default function PredictiveSuite() {
                                 <MetricCard icon={<Hash className="h-4 w-4 text-muted-foreground" />} title="Day Range" value={formatCurrency(stockData.latestMetrics.range)} footer={`From ${formatCurrency(stockData.latestMetrics.low)} to ${formatCurrency(stockData.latestMetrics.high)}`}/>
                             </div>
                         )}
-                        <Tabs defaultValue="LSTM" className="w-full">
+                        <Tabs defaultValue="all-models" className="w-full">
                             <div className="overflow-x-auto pb-2">
                                 <TabsList>
+                                    <TabsTrigger value="all-models">All Models</TabsTrigger>
                                     {modelNames.map(modelName => (
                                         <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
                                     ))}
@@ -318,6 +409,9 @@ export default function PredictiveSuite() {
                                     <TabsTrigger value="ensemble-median">Ensemble Median</TabsTrigger>
                                 </TabsList>
                             </div>
+                             <TabsContent value="all-models" className="mt-4">
+                                <AllModelsChart historicalData={stockData.historical} forecastData={stockData.forecast} />
+                            </TabsContent>
                             {modelNames.map(modelName => (
                                 <TabsContent key={modelName} value={modelName} className="mt-4">
                                     <ModelChart modelName={modelName} historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
