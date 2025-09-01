@@ -257,7 +257,6 @@ export default function PredictiveSuite() {
     useEffect(() => {
         const fetchSymbols = async () => {
             try {
-                // Fetch symbols without specifying one to get the full list
                 const res = await fetch(`/api/stock-data`); 
                 if (!res.ok) {
                     throw new Error('Failed to fetch symbol list');
@@ -304,14 +303,17 @@ export default function PredictiveSuite() {
         };
 
         fetchData();
-    }, [selectedStock]);
+    }, [selectedStock, initialLoad]);
     
     useEffect(() => {
-        const lowerCaseQuery = searchQuery.toLowerCase();
-        setFilteredSymbols(
-            symbols.filter(s => s.toLowerCase().includes(lowerCaseQuery))
-        );
-    }, [searchQuery, symbols]);
+        const upperCaseQuery = searchQuery.toUpperCase();
+        const newFilteredSymbols = symbols.filter(s => s.toUpperCase().includes(upperCaseQuery));
+        setFilteredSymbols(newFilteredSymbols);
+        
+        if (symbols.includes(upperCaseQuery) && selectedStock !== upperCaseQuery) {
+            setSelectedStock(upperCaseQuery);
+        }
+    }, [searchQuery, symbols, selectedStock]);
 
     if (initialLoad) {
         return (
@@ -368,7 +370,7 @@ export default function PredictiveSuite() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <Select onValueChange={setSelectedStock} defaultValue={selectedStock} disabled={symbols.length === 0}>
+                        <Select onValueChange={(value) => { setSelectedStock(value); setSearchQuery(value); }} value={selectedStock} disabled={symbols.length === 0}>
                             <SelectTrigger className="w-full sm:w-[180px]">
                                 <SelectValue placeholder="Select a stock" />
                             </SelectTrigger>

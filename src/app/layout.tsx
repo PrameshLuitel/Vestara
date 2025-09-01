@@ -37,7 +37,7 @@ export default function RootLayout({
                 Status: Under active development. Planned Launch: Q3 2025.
               </p>
               <p className="text-xs text-muted-foreground">
-                All content is AI-based. Do not take it as financial advice. This is for educational, testing, and research purposes only.
+                The Predictive Suite and Vestara GPT are AI-powered. Information is for educational and research purposes only; it is not financial advice.
               </p>
             </footer>
           </div>
