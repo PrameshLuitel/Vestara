@@ -125,7 +125,7 @@ async function getHistoricalData() {
 
 async function getForecastData() {
     const spreadsheetId = '1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk';
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY;
+    const apiKey = 'AIzaSyD56ax5a7x40wjfv6tW8wEmn6Z5PUuFZgg';
 
     if (!apiKey) {
         throw new Error('Google Sheets API key is not configured. Please set NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY in next.config.ts');

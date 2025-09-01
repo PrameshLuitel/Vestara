@@ -3,9 +3,6 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  env: {
-    NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY: 'YOUR_API_KEY_HERE', 
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
