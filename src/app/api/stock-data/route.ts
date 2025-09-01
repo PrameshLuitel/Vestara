@@ -152,31 +152,37 @@ async function getForecastData() {
 
         rows.forEach((row: any[]) => {
             const symbol = row[symbolIndex];
-            const excelDate = parseFloat(row[dateIndex]);
+            const dateValue = row[dateIndex]; // Can be string or number
 
-            if (symbol && !isNaN(excelDate)) {
-                if (!data[symbol]) {
-                    data[symbol] = {
-                        Ensemble: [], EnsembleMedian: [], XGBoost: [], LightGBM: [],
-                        RandomForest: [], Linear: [], LSTM: [], Prophet: [], ExpSmoothing: [],
-                    };
-                }
+            if (!symbol || !dateValue) return;
 
-                // Correctly convert Excel date serial number to YYYY-MM-DD
-                const jsTimestamp = (excelDate - 25569) * 86400 * 1000;
-                const jsDate = new Date(jsTimestamp);
-                const formattedDate = jsDate.toISOString().split('T')[0];
-                
-                Object.keys(data[symbol]).forEach(modelKey => {
-                    const headerIndex = headers.indexOf(modelKey);
-                    if (headerIndex !== -1) {
-                         const value = parseFloat(row[headerIndex]);
-                         if (!isNaN(value)) {
-                            data[symbol][modelKey].push({ date: formattedDate, value: value });
-                         }
-                    }
+            // Initialize symbol object if it doesn't exist
+            if (!data[symbol]) {
+                data[symbol] = {};
+                headers.slice(2).forEach((header: string) => {
+                    const modelKey = header.replace(/\s/g, ''); // Sanitize header name
+                    data[symbol][modelKey] = [];
                 });
             }
+
+            let formattedDate;
+            if (typeof dateValue === 'number') {
+                // Handle Excel date serial number
+                const jsTimestamp = (dateValue - 25569) * 86400 * 1000;
+                const jsDate = new Date(jsTimestamp);
+                formattedDate = jsDate.toISOString().split('T')[0];
+            } else {
+                // Assume it's a date string in a parseable format
+                formattedDate = new Date(dateValue).toISOString().split('T')[0];
+            }
+
+            headers.slice(2).forEach((header: string, index: number) => {
+                const modelKey = header.replace(/\s/g, ''); // Sanitize header name
+                const value = parseFloat(row[index + 2]);
+                if (!isNaN(value)) {
+                    data[symbol][modelKey].push({ date: formattedDate, value });
+                }
+            });
         });
 
         CACHE.forecast = { data, lastFetch: now };
