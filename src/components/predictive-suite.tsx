@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,7 @@ import { Skeleton } from './ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
+import * as xlsx from 'xlsx';
 
 const modelNames = ["LSTM", "Prophet", "XGBoost", "LightGBM", "Random Forest", "Linear Regression", "Exponential Smoothing"];
 const modelKeys: {[key: string]: string} = {
@@ -51,6 +52,148 @@ interface LatestMetrics {
     diff: number;
     range: number;
 }
+interface StockData {
+    historical: { [symbol: string]: HistoricalPoint[] };
+    forecast: { [symbol: string]: { [model: string]: ForecastPoint[] } };
+}
+
+// --- Data Fetching Logic (moved from API route) ---
+
+function getSheetName(daysAgo = 0) {
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}_${month}_${day}`;
+}
+
+async function getHistoricalData() {
+    const historicalUrl = 'https://omitnomis.github.io/ShareSansarScraper/Data/combined_excel.xlsx';
+    try {
+        const response = await fetch(historicalUrl);
+        if (!response.ok) throw new Error(`Failed to fetch historical data workbook. Status: ${response.status}`);
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = xlsx.read(arrayBuffer, { type: 'buffer' });
+        
+        const data: { [symbol: string]: any[] } = {};
+        let daysChecked = 0;
+        const daysToPull = 10;
+
+        for (let i = 0; daysChecked < daysToPull && i < 30; i++) {
+            const sheetName = getSheetName(i);
+            const worksheet = workbook.Sheets[sheetName];
+            if (worksheet) {
+                const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                
+                jsonData.slice(1).forEach(row => {
+                    const symbol = row[1];
+                    if (symbol) {
+                        if (!data[symbol]) data[symbol] = [];
+                        data[symbol].push({
+                            date: sheetName.replace(/_/g, '-'),
+                            symbol: row[1],
+                            conf: row[2],
+                            open: row[3],
+                            high: row[4],
+                            low: row[5],
+                            close: row[6],
+                            ltp: row[7],
+                            vol: row[11],
+                            prevClose: row[12],
+                            turnover: row[13],
+                            trans: row[14],
+                            diff: row[15],
+                            range: row[16],
+                        });
+                    }
+                });
+                daysChecked++;
+            }
+        }
+        
+        for (const symbol in data) {
+            data[symbol].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        }
+        return data;
+    } catch (error) {
+        console.error('Error fetching historical data:', error);
+        throw error;
+    }
+}
+
+async function getForecastData() {
+    const spreadsheetId = '1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk';
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY;
+
+    if (!apiKey) {
+        throw new Error('Google Sheets API key is not configured. Please set NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY in next.config.ts');
+    }
+
+    try {
+        const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
+        const metaResponse = await fetch(metaUrl);
+        if (!metaResponse.ok) throw new Error(`Failed to fetch Google Sheets metadata. Status: ${metaResponse.status}`);
+        const metaData = await metaResponse.json();
+        
+        const dateSheetRegex = /^\d{4}_\d{2}_\d{2}$/;
+        const latestSheetName = metaData.sheets
+            .map((sheet: any) => sheet.properties.title)
+            .filter((name: string) => dateSheetRegex.test(name))
+            .sort((a: string, b: string) => b.localeCompare(a))[0];
+
+        if (!latestSheetName) throw new Error('No forecast sheet with format YYYY_MM_DD found.');
+
+        const dataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${latestSheetName}?key=${apiKey}`;
+        const dataResponse = await fetch(dataUrl);
+        if (!dataResponse.ok) throw new Error(`Failed to fetch data from sheet ${latestSheetName}. Status: ${dataResponse.status}`);
+        const sheetData = await dataResponse.json();
+
+        if (!sheetData.values || sheetData.values.length < 2) throw new Error('Sheet contains no data or only a header row.');
+
+        const headers = sheetData.values[0];
+        const rows = sheetData.values.slice(1);
+        const data: { [symbol: string]: any } = {};
+        const symbolIndex = headers.indexOf('Symbol');
+        const dateIndex = headers.indexOf('Date');
+        if (symbolIndex === -1 || dateIndex === -1) throw new Error('Sheet must contain "Symbol" and "Date" columns.');
+
+        rows.forEach((row: any[]) => {
+            const symbol = row[symbolIndex];
+            if (!symbol) return;
+            if (!data[symbol]) {
+                data[symbol] = {};
+                headers.slice(2).forEach((header: string) => {
+                    const modelKey = header.replace(/\s/g, '');
+                    data[symbol][modelKey] = [];
+                });
+            }
+            const dateValue = row[dateIndex];
+            let formattedDate;
+            if (typeof dateValue === 'number') {
+                const jsTimestamp = (dateValue - 25569) * 86400 * 1000;
+                formattedDate = new Date(jsTimestamp).toISOString().split('T')[0];
+            } else {
+                formattedDate = new Date(dateValue).toISOString().split('T')[0];
+            }
+            headers.slice(2).forEach((header: string, index: number) => {
+                const modelKey = header.replace(/\s/g, '');
+                const value = parseFloat(row[index + 2]);
+                if (!isNaN(value)) {
+                    data[symbol][modelKey].push({ date: formattedDate, value });
+                }
+            });
+        });
+        return data;
+    } catch (error) {
+        console.error('Error fetching forecast data:', error);
+        throw error;
+    }
+}
+
+// --- End of Data Fetching Logic ---
+
 
 const chartConfigSingle = {
     historic: { label: "Historic", color: "hsl(var(--muted-foreground))" },
@@ -240,70 +383,40 @@ const AllModelsChart = ({ historicalData, forecastData }: { historicalData: Hist
 
 
 export default function PredictiveSuite() {
+    const [allData, setAllData] = useState<StockData | null>(null);
     const [symbols, setSymbols] = useState<string[]>([]);
     const [filteredSymbols, setFilteredSymbols] = useState<string[]>([]);
     const [selectedStock, setSelectedStock] = useState<string>("UPPER");
     const [searchQuery, setSearchQuery] = useState("");
-    const [stockData, setStockData] = useState<{
-        historical: HistoricalPoint[];
-        forecast: { [key: string]: ForecastPoint[] };
-        latestMetrics: LatestMetrics | null;
-    } | null>(null);
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [initialLoad, setInitialLoad] = useState(true);
 
     useEffect(() => {
-        const fetchSymbols = async () => {
-            try {
-                const res = await fetch(`/api/stock-data`); 
-                if (!res.ok) {
-                    throw new Error('Failed to fetch symbol list');
-                }
-                const data = await res.json();
-                if (data.symbols) {
-                    setSymbols(data.symbols);
-                    setFilteredSymbols(data.symbols);
-                } else {
-                    throw new Error('Symbol list not found in API response');
-                }
-            } catch (err: any) {
-                 setError('Could not load stock list. Please refresh the page.');
-            }
-        };
-        fetchSymbols();
-    }, []);
-
-    useEffect(() => {
-        if (!selectedStock) return;
-
-        const fetchData = async () => {
+        const fetchAllData = async () => {
             setLoading(true);
             setError(null);
             try {
-                const res = await fetch(`/api/stock-data?symbol=${selectedStock}`);
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.error || `Failed to fetch data for ${selectedStock}`);
-                }
-                const data = await res.json();
-                setStockData({
-                    historical: data.historical,
-                    forecast: data.forecast,
-                    latestMetrics: data.latest_metrics
-                });
+                const [historical, forecast] = await Promise.all([
+                    getHistoricalData(),
+                    getForecastData(),
+                ]);
+                
+                const stockSymbols = Object.keys(historical || {}).sort();
+                setSymbols(stockSymbols);
+                setFilteredSymbols(stockSymbols);
+                setAllData({ historical, forecast });
+
             } catch (err: any) {
-                setError(err.message);
-                setStockData(null);
+                setError(err.message || 'An unknown error occurred while fetching data.');
             } finally {
                 setLoading(false);
-                if(initialLoad) setInitialLoad(false);
+                setInitialLoad(false);
             }
         };
 
-        fetchData();
-    }, [selectedStock, initialLoad]);
+        fetchAllData();
+    }, []);
     
     useEffect(() => {
         const upperCaseQuery = searchQuery.toUpperCase();
@@ -314,6 +427,17 @@ export default function PredictiveSuite() {
             setSelectedStock(upperCaseQuery);
         }
     }, [searchQuery, symbols, selectedStock]);
+
+    const currentStockData = useMemo(() => {
+        if (!allData || !selectedStock) return null;
+        
+        const historical = allData.historical[selectedStock] || [];
+        const forecast = allData.forecast[selectedStock] || {};
+        const latestMetrics = historical.length > 0 ? historical[historical.length - 1] as unknown as LatestMetrics : null;
+
+        return { historical, forecast, latestMetrics };
+    }, [allData, selectedStock]);
+
 
     if (initialLoad) {
         return (
@@ -386,23 +510,23 @@ export default function PredictiveSuite() {
                 </div>
             </CardHeader>
             <CardContent>
-                 {loading ? (
+                 {loading && !allData ? (
                     <div className="text-center p-8">
-                        <p>Loading data for {selectedStock}...</p>
+                        <p>Loading initial data...</p>
                     </div>
                  ) : error ? (
                     <Alert variant="destructive">
-                      <AlertTitle>Error</AlertTitle>
+                      <AlertTitle>Error Fetching Data</AlertTitle>
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
-                 ) : stockData ? (
+                 ) : currentStockData ? (
                     <>
-                        {stockData.latestMetrics && (
+                        {currentStockData.latestMetrics && (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-                                <MetricCard icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} title="Open" value={formatCurrency(stockData.latestMetrics.open)} footer={`High: ${formatCurrency(stockData.latestMetrics.high)} / Low: ${formatCurrency(stockData.latestMetrics.low)}`}/>
-                                <MetricCard icon={<BarChart className="h-4 w-4 text-muted-foreground" />} title="Volume" value={formatNumber(stockData.latestMetrics.vol)} footer={`Turnover: ${formatCurrency(stockData.latestMetrics.turnover)}`} />
-                                <MetricCard icon={<Clock className="h-4 w-4 text-muted-foreground" />} title="Previous Close" value={formatCurrency(stockData.latestMetrics.prevClose)} footer={`Day Change: ${formatCurrency(stockData.latestMetrics.diff)}`} />
-                                <MetricCard icon={<Hash className="h-4 w-4 text-muted-foreground" />} title="Day Range" value={formatCurrency(stockData.latestMetrics.range)} footer={`From ${formatCurrency(stockData.latestMetrics.low)} to ${formatCurrency(stockData.latestMetrics.high)}`}/>
+                                <MetricCard icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} title="Open" value={formatCurrency(currentStockData.latestMetrics.open)} footer={`High: ${formatCurrency(currentStockData.latestMetrics.high)} / Low: ${formatCurrency(currentStockData.latestMetrics.low)}`}/>
+                                <MetricCard icon={<BarChart className="h-4 w-4 text-muted-foreground" />} title="Volume" value={formatNumber(currentStockData.latestMetrics.vol)} footer={`Turnover: ${formatCurrency(currentStockData.latestMetrics.turnover)}`} />
+                                <MetricCard icon={<Clock className="h-4 w-4 text-muted-foreground" />} title="Previous Close" value={formatCurrency(currentStockData.latestMetrics.prevClose)} footer={`Day Change: ${formatCurrency(currentStockData.latestMetrics.diff)}`} />
+                                <MetricCard icon={<Hash className="h-4 w-4 text-muted-foreground" />} title="Day Range" value={formatCurrency(currentStockData.latestMetrics.range)} footer={`From ${formatCurrency(currentStockData.latestMetrics.low)} to ${formatCurrency(currentStockData.latestMetrics.high)}`}/>
                             </div>
                         )}
                         <Tabs defaultValue="all-models" className="w-full">
@@ -417,17 +541,17 @@ export default function PredictiveSuite() {
                                 </TabsList>
                             </div>
                              <TabsContent value="all-models" className="mt-4">
-                                <AllModelsChart historicalData={stockData.historical} forecastData={stockData.forecast} />
+                                <AllModelsChart historicalData={currentStockData.historical} forecastData={currentStockData.forecast} />
                             </TabsContent>
                              <TabsContent value="ensemble-mean" className="mt-4">
-                                <ModelChart modelName="Ensemble Mean" historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
+                                <ModelChart modelName="Ensemble Mean" historicalData={currentStockData.historical} forecastData={currentStockData.forecast} latestMetrics={currentStockData.latestMetrics} />
                             </TabsContent>
                             <TabsContent value="ensemble-median" className="mt-4">
-                                <ModelChart modelName="Ensemble Median" historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
+                                <ModelChart modelName="Ensemble Median" historicalData={currentStockData.historical} forecastData={currentStockData.forecast} latestMetrics={currentStockData.latestMetrics} />
                             </TabsContent>
                             {modelNames.map(modelName => (
                                 <TabsContent key={modelName} value={modelName} className="mt-4">
-                                    <ModelChart modelName={modelName} historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
+                                    <ModelChart modelName={modelName} historicalData={currentStockData.historical} forecastData={currentStockData.forecast} latestMetrics={currentStockData.latestMetrics} />
                                 </TabsContent>
                             ))}
                         </Tabs>
@@ -441,3 +565,4 @@ export default function PredictiveSuite() {
         </Card>
     );
 }
+
