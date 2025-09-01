@@ -14,16 +14,15 @@ function getSheetName(daysAgo = 0) {
 
 // Cache to store fetched data to avoid refetching on every request
 const CACHE = {
-    historical: null,
-    forecast: null,
-    lastFetch: 0,
+    historical: { data: null, lastFetch: 0 },
+    forecast: { data: null, lastFetch: 0 },
 };
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
 async function getHistoricalData() {
     const now = Date.now();
-    if (CACHE.historical && (now - CACHE.lastFetch < CACHE_DURATION)) {
-        return CACHE.historical;
+    if (CACHE.historical.data && (now - CACHE.historical.lastFetch < CACHE_DURATION)) {
+        return CACHE.historical.data;
     }
 
     const historicalUrl = 'https://omitnomis.github.io/ShareSansarScraper/Data/combined_excel.xlsx';
@@ -78,8 +77,7 @@ async function getHistoricalData() {
             data[symbol].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         }
 
-        CACHE.historical = data;
-        CACHE.lastFetch = now;
+        CACHE.historical = { data, lastFetch: now };
         return data;
 
     } catch (error) {
@@ -90,12 +88,12 @@ async function getHistoricalData() {
 
 async function getForecastData() {
     const now = Date.now();
-    if (CACHE.forecast && (now - CACHE.lastFetch < CACHE_DURATION)) {
-        return CACHE.forecast;
+    if (CACHE.forecast.data && (now - CACHE.forecast.lastFetch < CACHE_DURATION)) {
+        return CACHE.forecast.data;
     }
 
     const spreadsheetId = '1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk';
-    const apiKey = process.env.GOOGLE_SHEETS_API_KEY; // IMPORTANT: Use environment variable for API key
+    const apiKey = process.env.GOOGLE_SHEETS_API_KEY; 
 
     if (!apiKey) {
         console.error('Google Sheets API key is not configured.');
@@ -181,7 +179,7 @@ async function getForecastData() {
             }
         });
 
-        CACHE.forecast = data;
+        CACHE.forecast = { data, lastFetch: now };
         return data;
 
     } catch (error) {
@@ -196,10 +194,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const symbol = searchParams.get('symbol');
 
-        if (!symbol) {
-            return NextResponse.json({ error: 'Symbol parameter is required' }, { status: 400 });
-        }
-
+        
         const [historicalData, forecastData] = await Promise.all([
             getHistoricalData(),
             getForecastData(),
@@ -212,6 +207,12 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Failed to fetch or process forecast data from Google Sheets.' }, { status: 500 });
         }
         
+        if (!symbol) {
+             return NextResponse.json({
+                symbols: Object.keys(historicalData || {}).sort(),
+             });
+        }
+
         const symbolHistorical = historicalData[symbol];
         const symbolForecast = forecastData[symbol];
 
@@ -225,7 +226,6 @@ export async function GET(request: Request) {
             historical: symbolHistorical || [],
             forecast: symbolForecast || {},
             latest_metrics: latestHistorical,
-            symbols: Object.keys(historicalData || {}).sort(),
         });
 
     } catch (error) {

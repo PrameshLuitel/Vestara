@@ -62,9 +62,9 @@ const chartConfigAll = {
     Prophet: { label: "Prophet", color: "hsl(var(--chart-2))" },
     XGBoost: { label: "XGBoost", color: "hsl(var(--chart-3))" },
     LightGBM: { label: "LightGBM", color: "hsl(var(--chart-4))" },
-    RandomForest: { label: "Random Forest", color: "hsl(var(--chart-5))" },
+    RandomForest: { label: "RandomForest", color: "hsl(var(--chart-5))" },
     Linear: { label: "Linear", color: "hsl(var(--accent))" },
-    ExpSmoothing: { label: "Exp. Smoothing", color: "hsl(var(--foreground))" },
+    ExpSmoothing: { label: "ExpSmoothing", color: "hsl(var(--foreground))" },
 };
 
 const formatNumber = (num: number | undefined | null) => {
@@ -97,7 +97,7 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
 
     const chartData = useMemo(() => {
         const data = historicalData.map(p => ({ date: p.date, historic: p.close, predicted: null }));
-        const lastHistoric = data[data.length - 1];
+        const lastHistoric = data.length > 0 ? data[data.length - 1] : null;
 
         if (modelForecast.length > 0 && lastHistoric) {
             const bridgePoint = { date: lastHistoric.date, historic: lastHistoric.historic, predicted: lastHistoric.historic };
@@ -183,30 +183,28 @@ const AllModelsChart = ({ historicalData, forecastData }: { historicalData: Hist
     const chartData = useMemo(() => {
         let combinedData: any[] = historicalData.map(p => ({ date: p.date, historic: p.close }));
 
-        const lastHistoric = combinedData[combinedData.length - 1];
+        const lastHistoric = combinedData.length > 0 ? combinedData[combinedData.length - 1] : null;
         if (!lastHistoric) return combinedData;
 
-        // Create a map for quick date lookups
         const dateMap = new Map(combinedData.map(p => [p.date, p]));
         
         Object.entries(forecastData).forEach(([modelKey, modelPoints]) => {
-            if (!modelKeys[modelKey as keyof typeof modelKeys]) { // Skip Ensemble models for clarity
-                 // Use the modelKey directly if it's one of the base models like "LSTM", "Prophet", etc.
-                const validModelKey = Object.keys(modelKeys).find(k => modelKeys[k] === modelKey);
-                if (validModelKey) {
-                    const bridgePoint = { date: lastHistoric.date, [modelKey]: lastHistoric.historic };
-                    if (dateMap.has(bridgePoint.date)) {
-                        Object.assign(dateMap.get(bridgePoint.date)!, { [modelKey]: bridgePoint[modelKey] });
-                    }
-
-                    modelPoints.forEach(p => {
-                        if (dateMap.has(p.date)) {
-                            Object.assign(dateMap.get(p.date)!, { [modelKey]: p.value });
-                        } else {
-                            dateMap.set(p.date, { date: p.date, [modelKey]: p.value });
-                        }
-                    });
+            const validModelKey = Object.keys(modelKeys).find(k => modelKeys[k] === modelKey);
+            if (validModelKey && modelKey !== 'Ensemble' && modelKey !== 'EnsembleMedian') {
+                const bridgePoint = { date: lastHistoric.date, [modelKey]: lastHistoric.historic };
+                if (dateMap.has(bridgePoint.date)) {
+                    Object.assign(dateMap.get(bridgePoint.date)!, { [modelKey]: bridgePoint[modelKey] });
                 }
+
+                modelPoints.forEach(p => {
+                    if (dateMap.has(p.date)) {
+                        Object.assign(dateMap.get(p.date)!, { [modelKey]: p.value });
+                    } else {
+                        const newPoint: { [key: string]: any } = { date: p.date };
+                        newPoint[modelKey] = p.value;
+                        dateMap.set(p.date, newPoint);
+                    }
+                });
             }
         });
         
@@ -227,9 +225,13 @@ const AllModelsChart = ({ historicalData, forecastData }: { historicalData: Hist
                     <Tooltip content={<ChartTooltipContent />} />
                     <ChartLegend content={<ChartLegendContent />} />
                     <Line type="monotone" dataKey="historic" stroke="var(--color-historic)" strokeWidth={2} dot={false} />
-                    {Object.values(modelKeys).filter(k => k !== 'Ensemble' && k !== 'EnsembleMedian').map((key) => (
-                        <Line key={key} type="monotone" dataKey={key} stroke={`var(--color-${key})`} strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls />
-                    ))}
+                    {Object.values(modelKeys).filter(k => k !== 'Ensemble' && k !== 'EnsembleMedian').map((key) => {
+                       const chartKey = Object.keys(chartConfigAll).find(cKey => cKey === key)
+                       if(!chartKey) return null;
+                       return (
+                        <Line key={key} type="monotone" dataKey={key} stroke={`var(--color-${chartKey})`} strokeWidth={2} strokeDasharray="5 5" dot={false} connectNulls />
+                       )
+                    })}
                 </LineChart>
             </ChartContainer>
         </div>
@@ -255,7 +257,8 @@ export default function PredictiveSuite() {
     useEffect(() => {
         const fetchSymbols = async () => {
             try {
-                const res = await fetch(`/api/stock-data?symbol=UPPER`); 
+                // Fetch symbols without specifying one to get the full list
+                const res = await fetch(`/api/stock-data`); 
                 if (!res.ok) {
                     throw new Error('Failed to fetch symbol list');
                 }
@@ -263,6 +266,8 @@ export default function PredictiveSuite() {
                 if (data.symbols) {
                     setSymbols(data.symbols);
                     setFilteredSymbols(data.symbols);
+                } else {
+                    throw new Error('Symbol list not found in API response');
                 }
             } catch (err: any) {
                  setError('Could not load stock list. Please refresh the page.');
@@ -299,7 +304,7 @@ export default function PredictiveSuite() {
         };
 
         fetchData();
-    }, [selectedStock, initialLoad]);
+    }, [selectedStock]);
     
     useEffect(() => {
         const lowerCaseQuery = searchQuery.toLowerCase();
@@ -308,7 +313,7 @@ export default function PredictiveSuite() {
         );
     }, [searchQuery, symbols]);
 
-    if (initialLoad || (loading && !stockData && !error)) {
+    if (initialLoad) {
         return (
             <Card>
                 <CardHeader>
@@ -388,7 +393,7 @@ export default function PredictiveSuite() {
                       <AlertTitle>Error</AlertTitle>
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
-                 ) : stockData && stockData.historical.length > 0 ? (
+                 ) : stockData ? (
                     <>
                         {stockData.latestMetrics && (
                             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -402,27 +407,27 @@ export default function PredictiveSuite() {
                             <div className="overflow-x-auto pb-2">
                                 <TabsList>
                                     <TabsTrigger value="all-models">All Models</TabsTrigger>
+                                    <TabsTrigger value="ensemble-mean">Ensemble Mean</TabsTrigger>
+                                    <TabsTrigger value="ensemble-median">Ensemble Median</TabsTrigger>
                                     {modelNames.map(modelName => (
                                         <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
                                     ))}
-                                    <TabsTrigger value="ensemble-mean">Ensemble Mean</TabsTrigger>
-                                    <TabsTrigger value="ensemble-median">Ensemble Median</TabsTrigger>
                                 </TabsList>
                             </div>
                              <TabsContent value="all-models" className="mt-4">
                                 <AllModelsChart historicalData={stockData.historical} forecastData={stockData.forecast} />
+                            </TabsContent>
+                             <TabsContent value="ensemble-mean" className="mt-4">
+                                <ModelChart modelName="Ensemble Mean" historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
+                            </TabsContent>
+                            <TabsContent value="ensemble-median" className="mt-4">
+                                <ModelChart modelName="Ensemble Median" historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
                             </TabsContent>
                             {modelNames.map(modelName => (
                                 <TabsContent key={modelName} value={modelName} className="mt-4">
                                     <ModelChart modelName={modelName} historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
                                 </TabsContent>
                             ))}
-                            <TabsContent value="ensemble-mean" className="mt-4">
-                                <ModelChart modelName="Ensemble Mean" historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
-                            </TabsContent>
-                            <TabsContent value="ensemble-median" className="mt-4">
-                                <ModelChart modelName="Ensemble Median" historicalData={stockData.historical} forecastData={stockData.forecast} latestMetrics={stockData.latestMetrics} />
-                            </TabsContent>
                         </Tabs>
                     </>
                 ) : (
@@ -434,5 +439,3 @@ export default function PredictiveSuite() {
         </Card>
     );
 }
-
-    
