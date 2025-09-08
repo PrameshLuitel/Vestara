@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -13,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import * as xlsx from 'xlsx';
+import LoadingAnimation from './loading-animation';
 
 const modelNames = ["LSTM", "Prophet", "XGBoost", "LightGBM", "Random Forest", "Linear Regression", "Exponential Smoothing"];
 const modelKeys: {[key: string]: string} = {
@@ -441,39 +443,10 @@ export default function PredictiveSuite() {
 
     if (initialLoad) {
         return (
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-8 w-3/5" />
-                    <Skeleton className="h-4 w-4/5" />
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-6">
-                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                             <div className="flex items-baseline gap-4">
-                                <Skeleton className="h-10 w-24" />
-                                <Skeleton className="h-6 w-32" />
-                            </div>
-                            <Skeleton className="h-10 w-full sm:w-[180px]" />
-                         </div>
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                            {[...Array(4)].map((_, i) => (
-                                <Card key={i}>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <Skeleton className="h-5 w-20" />
-                                        <Skeleton className="h-6 w-6" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <Skeleton className="h-8 w-24" />
-                                        <Skeleton className="h-3 w-28 mt-2" />
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                        <Skeleton className="w-full h-[400px]" />
-                    </div>
-                </CardContent>
-            </Card>
-        );
+            <div className="flex items-center justify-center h-[60vh]">
+                <LoadingAnimation />
+            </div>
+        )
     }
 
     return (
