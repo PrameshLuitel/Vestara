@@ -2,38 +2,31 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { LineChart, Line, YAxis, CartesianGrid } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { value: 10 }, { value: 30 }, { value: 20 }, { value: 50 },
-  { value: 40 }, { value: 70 }, { value: 60 }, { value: 90 },
-  { value: 80 }, { value: 100 },
-];
+const data = Array.from({ length: 20 }, (_, i) => ({
+  name: `Page ${i}`,
+  uv: Math.random() * 300 + 20,
+}));
 
 const loadingSteps = [
     "Initializing analysis engine...",
-    "Connecting to data sources...",
+    "Connecting to secure data streams...",
     "Fetching historical market data...",
-    "Running predictive models...",
-    "Aggregating ensemble forecasts...",
-    "Generating visualizations...",
+    "Compiling time-series datasets...",
+    "Executing LSTM model...",
+    "Running Prophet forecast...",
+    "Processing XGBoost predictions...",
+    "Aggregating ensemble models...",
+    "Calculating confidence intervals...",
+    "Generating final visualizations...",
+    "Almost there...",
 ];
 
 export default function LoadingAnimation() {
-  const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(progressInterval);
-          return 100;
-        }
-        return prev + 1;
-      });
-    }, 40); // Controls the speed of the line drawing
-
     const stepInterval = setInterval(() => {
         setCurrentStep(prev => {
             if (prev >= loadingSteps.length -1) {
@@ -42,34 +35,46 @@ export default function LoadingAnimation() {
             }
             return prev + 1;
         })
-    }, 1000); // How often the text changes
+    }, 600); // Faster text changes
 
     return () => {
-      clearInterval(progressInterval);
       clearInterval(stepInterval);
     };
   }, []);
 
-  const animatedData = data.slice(0, Math.ceil(data.length * (progress / 100)));
-
   return (
-    <div className="flex flex-col items-center justify-center text-center p-4">
-        <h2 className="text-2xl font-semibold mb-4 text-primary font-headline">Preparing Your Analysis</h2>
-        <div className="w-full max-w-md h-[200px]">
-            <LineChart width={400} height={200} data={animatedData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <YAxis domain={[0, 110]} hide />
-                <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={3}
-                    dot={false}
-                    isAnimationActive={false} // We handle animation manually
-                />
-            </LineChart>
+    <div className="flex flex-col items-center justify-center text-center p-4 w-full h-full">
+        <div className="relative w-full max-w-md p-8 rounded-xl overflow-hidden">
+             <div className="absolute inset-0 bg-primary/10 animate-pulse rounded-xl"></div>
+             <div className="relative z-10">
+                <h2 className="text-2xl font-semibold mb-4 text-primary font-headline">Preparing Your Analysis</h2>
+                <div className="w-full h-[150px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+                             <defs>
+                                <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <Area
+                                type="monotone"
+                                dataKey="uv"
+                                stroke="hsl(var(--primary))"
+                                strokeWidth={2}
+                                fill="url(#colorUv)"
+                                isAnimationActive={true}
+                                animationDuration={1500}
+                                animationEasing="ease-in-out"
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+                <p className="mt-4 text-muted-foreground w-64 h-10 transition-all duration-300 ease-in-out">
+                    {loadingSteps[currentStep]}
+                </p>
+             </div>
         </div>
-        <p className="mt-4 text-muted-foreground w-64 h-10">{loadingSteps[currentStep]}</p>
     </div>
   );
 }

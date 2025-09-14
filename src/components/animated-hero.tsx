@@ -1,3 +1,4 @@
+
 // Inspired by https://codepen.io/robin-dela/pen/KKPYoBq
 
 "use client";
@@ -6,11 +7,12 @@ import { useTheme } from 'next-themes';
 
 const AnimatedHero = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !containerRef.current) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -19,17 +21,26 @@ const AnimatedHero = () => {
     let mouse = { x: 0, y: 0 };
 
     const setCanvasExtents = () => {
-      w = canvas.width = canvas.parentElement ? canvas.parentElement.clientWidth : window.innerWidth;
-      h = canvas.height = canvas.parentElement ? canvas.parentElement.clientHeight : window.innerHeight;
+      if (containerRef.current) {
+        w = canvas.width = containerRef.current.clientWidth;
+        h = canvas.height = containerRef.current.clientHeight;
+      }
     };
     setCanvasExtents();
-    window.onresize = setCanvasExtents;
+    window.addEventListener('resize', setCanvasExtents);
 
     const handleMouseMove = (e: MouseEvent) => {
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        }
     }
-    window.addEventListener('mousemove', handleMouseMove);
+    containerRef.current.addEventListener('mousemove', handleMouseMove);
+    containerRef.current.addEventListener('mouseleave', () => {
+        mouse.x = w / 2;
+        mouse.y = h / 2;
+    });
 
     class Particle {
       x: number;
@@ -89,7 +100,7 @@ const AnimatedHero = () => {
     let particles: Particle[] = [];
     const init = () => {
       particles = [];
-      const gap = 20;
+      const gap = 25; // Increased gap for fewer particles
       for (let y = 0; y < h; y += gap) {
         for (let x = 0; x < w; x += gap) {
           particles.push(new Particle(x, y));
@@ -106,12 +117,12 @@ const AnimatedHero = () => {
                 let distance = ((particles[a].x - particles[b].x) * (particles[a].x - particles[b].x))
                              + ((particles[a].y - particles[b].y) * (particles[a].y - particles[b].y));
 
-                const connectDistance = (w / 7) * (h / 7);
+                const connectDistance = (w / 8) * (h / 8); // Adjusted connection distance
                 if (distance < connectDistance) {
-                    opacityValue = 1 - (distance/20000);
+                    opacityValue = 1 - (distance/connectDistance);
                     const strokeColor = theme === 'dark' 
-                        ? 'hsla(0, 0%, 90%, ' + opacityValue + ')' 
-                        : 'hsla(0, 0%, 50%, ' + opacityValue * 0.5 + ')';
+                        ? 'hsla(0, 0%, 90%, ' + opacityValue * 0.5 + ')' 
+                        : 'hsla(0, 0%, 50%, ' + opacityValue * 0.3 + ')';
                     ctx.strokeStyle = strokeColor;
                     ctx.lineWidth = 0.5;
                     ctx.beginPath();
@@ -122,7 +133,8 @@ const AnimatedHero = () => {
             }
         }
     }
-
+    
+    let animationFrameId: number;
     const animate = () => {
         if(!ctx) return;
         ctx.clearRect(0, 0, w, h);
@@ -131,17 +143,29 @@ const AnimatedHero = () => {
             p.draw();
         });
         connect();
-        requestAnimationFrame(animate);
+        animationFrameId = requestAnimationFrame(animate);
     }
     animate();
 
+    const currentContainerRef = containerRef.current;
     return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.onresize = null;
+        cancelAnimationFrame(animationFrameId);
+        window.removeEventListener('resize', setCanvasExtents);
+        if (currentContainerRef) {
+          currentContainerRef.removeEventListener('mousemove', handleMouseMove);
+          currentContainerRef.removeEventListener('mouseleave', () => {
+            mouse.x = w / 2;
+            mouse.y = h / 2;
+          });
+        }
     };
   }, [theme]);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full bg-transparent"></canvas>;
+  return (
+    <div ref={containerRef} className="absolute inset-0 w-full h-full">
+        <canvas ref={canvasRef} className="w-full h-full bg-transparent"></canvas>
+    </div>
+  );
 };
 
 export default AnimatedHero;
