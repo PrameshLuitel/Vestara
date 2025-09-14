@@ -20,8 +20,8 @@ interface Message {
 const examplePrompts = [
     { title: "Query Compliance", prompt: "What are the SEBON regulations regarding IPO issuance for a private company?" },
     { title: "Analyze Market Operations", prompt: "Explain the workflow for rights share application in Nepal." },
-    { title: "Define a Financial Term", prompt: "What constitutes 'insider trading' under Nepalese securities law?" },
-    { title: "Strategic Inquiry", prompt: "Summarize the key compliance checkpoints for a new mutual fund scheme." }
+    { title: "Check Forecast Data", prompt: "What is the 7-day forecast for UPPER according to the Predictive Suite?" },
+    { title: "Define a Financial Term", prompt: "What constitutes 'insider trading' under Nepalese securities law?" }
 ]
 
 const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
