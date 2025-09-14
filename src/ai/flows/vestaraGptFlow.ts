@@ -40,7 +40,6 @@ CRITICAL RULES:
 const vestaraGptPrompt = ai.definePrompt({
   name: 'vestaraGptPrompt',
   system: systemPrompt,
-  input: { schema: VestaraGptInputSchema },
   output: { schema: VestaraGptOutputSchema },
   prompt: `The user's query is: {{{this}}}`,
 });
