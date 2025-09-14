@@ -15,6 +15,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import * as xlsx from 'xlsx';
 import LoadingAnimation from './loading-animation';
+import { getLatestForecastData } from '@/services/google-sheets';
 
 const modelNames = ["LSTM", "Prophet", "XGBoost", "LightGBM", "Random Forest", "Linear Regression", "Exponential Smoothing"];
 const modelKeys: {[key: string]: string} = {
@@ -121,75 +122,6 @@ async function getHistoricalData() {
         return data;
     } catch (error) {
         console.error('Error fetching historical data:', error);
-        throw error;
-    }
-}
-
-async function getForecastData() {
-    const spreadsheetId = '1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk';
-    const apiKey = 'AIzaSyD56ax5a7x40wjfv6tW8wEmn6Z5PUuFZgg';
-
-    if (!apiKey) {
-        throw new Error('Google Sheets API key is not configured. Please set NEXT_PUBLIC_GOOGLE_SHEETS_API_KEY in next.config.ts');
-    }
-
-    try {
-        const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
-        const metaResponse = await fetch(metaUrl);
-        if (!metaResponse.ok) throw new Error(`Failed to fetch Google Sheets metadata. Status: ${metaResponse.status}`);
-        const metaData = await metaResponse.json();
-        
-        const dateSheetRegex = /^\d{4}_\d{2}_\d{2}$/;
-        const latestSheetName = metaData.sheets
-            .map((sheet: any) => sheet.properties.title)
-            .filter((name: string) => dateSheetRegex.test(name))
-            .sort((a: string, b: string) => b.localeCompare(a))[0];
-
-        if (!latestSheetName) throw new Error('No forecast sheet with format YYYY_MM_DD found.');
-
-        const dataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${latestSheetName}?key=${apiKey}`;
-        const dataResponse = await fetch(dataUrl);
-        if (!dataResponse.ok) throw new Error(`Failed to fetch data from sheet ${latestSheetName}. Status: ${dataResponse.status}`);
-        const sheetData = await dataResponse.json();
-
-        if (!sheetData.values || sheetData.values.length < 2) throw new Error('Sheet contains no data or only a header row.');
-
-        const headers = sheetData.values[0];
-        const rows = sheetData.values.slice(1);
-        const data: { [symbol: string]: any } = {};
-        const symbolIndex = headers.indexOf('Symbol');
-        const dateIndex = headers.indexOf('Date');
-        if (symbolIndex === -1 || dateIndex === -1) throw new Error('Sheet must contain "Symbol" and "Date" columns.');
-
-        rows.forEach((row: any[]) => {
-            const symbol = row[symbolIndex];
-            if (!symbol) return;
-            if (!data[symbol]) {
-                data[symbol] = {};
-                headers.slice(2).forEach((header: string) => {
-                    const modelKey = header.replace(/\s/g, '');
-                    data[symbol][modelKey] = [];
-                });
-            }
-            const dateValue = row[dateIndex];
-            let formattedDate;
-            if (typeof dateValue === 'number') {
-                const jsTimestamp = (dateValue - 25569) * 86400 * 1000;
-                formattedDate = new Date(jsTimestamp).toISOString().split('T')[0];
-            } else {
-                formattedDate = new Date(dateValue).toISOString().split('T')[0];
-            }
-            headers.slice(2).forEach((header: string, index: number) => {
-                const modelKey = header.replace(/\s/g, '');
-                const value = parseFloat(row[index + 2]);
-                if (!isNaN(value)) {
-                    data[symbol][modelKey].push({ date: formattedDate, value });
-                }
-            });
-        });
-        return data;
-    } catch (error) {
-        console.error('Error fetching forecast data:', error);
         throw error;
     }
 }
@@ -401,7 +333,7 @@ export default function PredictiveSuite() {
             try {
                 const [historical, forecast] = await Promise.all([
                     getHistoricalData(),
-                    getForecastData(),
+                    getLatestForecastData(),
                 ]);
                 
                 const stockSymbols = Object.keys(historical || {}).sort();
