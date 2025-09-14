@@ -4,9 +4,6 @@
  * This is used by both the Predictive Suite and the Vestara GPT AI tool.
  */
 
-// NOTE: This key is read from environment variables. For local development, create a .env.local file
-// in the root of your project and add: NEXT_PUBLIC_GOOGLE_API_KEY='YOUR_API_KEY'
-// For production, this variable must be set in your hosting provider's environment variable settings.
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
 const SPREADSHEET_ID = '1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk';
 
@@ -20,8 +17,9 @@ export async function getLatestForecastData() {
     }
 
     if (!API_KEY) {
-        const errorMessage = 'Google API key is not configured. Please set NEXT_PUBLIC_GOOGLE_API_KEY.';
+        const errorMessage = 'Google API key is not configured for the client. Please set NEXT_PUBLIC_GOOGLE_API_KEY in your Vercel environment variables.';
         console.error(errorMessage);
+        // Return a structured error that the client component can gracefully handle
         return { error: errorMessage };
     }
 
@@ -86,8 +84,6 @@ export async function getLatestForecastData() {
 
     } catch (error) {
         console.error('Error fetching forecast data:', error);
-        // Return an empty object or re-throw, depending on desired error handling.
-        // For the tool, returning an error message within the data is often better.
         return { error: (error as Error).message };
     }
 }
