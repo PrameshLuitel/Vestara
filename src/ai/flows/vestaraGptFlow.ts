@@ -19,8 +19,7 @@ const VestaraGptInputSchema = z.object({
 });
 export type VestaraGptInput = z.infer<typeof VestaraGptInputSchema>;
 
-const VestaraGptOutputSchema = z.string();
-export type VestaraGptOutput = z.infer<typeof VestaraGptOutputSchema>;
+export type VestaraGptOutput = string;
 
 const systemPrompt = `You are Vestara GPT, a specialized AI assistant for the Nepalese financial market. Your sole purpose is to provide accurate, factual information based ONLY on the content from the following authoritative sources:
 - sharesansar.com
@@ -39,26 +38,12 @@ CRITICAL RULES:
 4.  Answer concisely and professionally.
 5.  Your goal is to be a RAG (Retrieval-Augmented Generation) model. Act as if you are retrieving the information directly from these sources before answering.`;
 
-const vestaraGptPrompt = ai.definePrompt({
-  name: 'vestaraGptPrompt',
-  system: systemPrompt,
-  input: { schema: VestaraGptInputSchema },
-  output: { schema: VestaraGptOutputSchema },
-  prompt: `The user's query is: {{{query}}}`,
-});
-
-const vestaraGptFlow = ai.defineFlow(
-  {
-    name: 'vestaraGptFlow',
-    inputSchema: VestaraGptInputSchema,
-    outputSchema: VestaraGptOutputSchema,
-  },
-  async (input) => {
-    const llmResponse = await vestaraGptPrompt(input);
-    return llmResponse.output ?? 'I am sorry, but I could not generate a response.';
-  }
-);
-
 export async function vestaraGpt(input: VestaraGptInput): Promise<VestaraGptOutput> {
-  return await vestaraGptFlow(input);
+  const llmResponse = await ai.generate({
+    model: 'googleai/gemini-2.5-flash',
+    system: systemPrompt,
+    prompt: `The user's query is: ${input.query}`,
+  });
+
+  return llmResponse.text ?? 'I am sorry, but I could not generate a response.';
 }
