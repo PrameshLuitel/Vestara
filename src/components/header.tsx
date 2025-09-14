@@ -8,7 +8,7 @@ export default function Header() {
       <div className="container flex h-14 items-center justify-between">
         <div className="mr-4 flex items-center">
           <Link href="/" className="font-bold font-headline text-foreground">
-            Vestara
+            Vestara<sup>AI</sup>
           </Link>
         </div>
         <nav className="flex items-center gap-2">
