@@ -140,7 +140,7 @@ const chartConfigAll = {
     XGBoost: { label: "XGBoost", color: "hsl(var(--chart-3))" },
     LightGBM: { label: "LightGBM", color: "hsl(var(--chart-4))" },
     RandomForest: { label: "RandomForest", color: "hsl(var(--chart-5))" },
-    Linear: { label: "Linear", color: "hsl(var(--accent))" },
+    Linear: { label: "Linear", color: "hsl(262, 80%, 50%)" },
     ExpSmoothing: { label: "ExpSmoothing", color: "hsl(var(--foreground))" },
 };
 
