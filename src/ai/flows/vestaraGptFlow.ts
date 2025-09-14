@@ -14,7 +14,9 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-const VestaraGptInputSchema = z.string();
+const VestaraGptInputSchema = z.object({
+  query: z.string(),
+});
 export type VestaraGptInput = z.infer<typeof VestaraGptInputSchema>;
 
 const VestaraGptOutputSchema = z.string();
@@ -40,22 +42,23 @@ CRITICAL RULES:
 const vestaraGptPrompt = ai.definePrompt({
   name: 'vestaraGptPrompt',
   system: systemPrompt,
+  input: { schema: VestaraGptInputSchema },
   output: { schema: VestaraGptOutputSchema },
-  prompt: `The user's query is: {{{this}}}`,
+  prompt: `The user's query is: {{{query}}}`,
 });
 
-export async function vestaraGpt(query: VestaraGptInput): Promise<VestaraGptOutput> {
-  const llmResponse = await vestaraGptPrompt(query);
-  return llmResponse.output ?? 'I am sorry, but I could not generate a response.';
-}
-
-ai.defineFlow(
+const vestaraGptFlow = ai.defineFlow(
   {
     name: 'vestaraGptFlow',
     inputSchema: VestaraGptInputSchema,
     outputSchema: VestaraGptOutputSchema,
   },
-  async (query) => {
-    return await vestaraGpt(query);
+  async (input) => {
+    const llmResponse = await vestaraGptPrompt(input);
+    return llmResponse.output ?? 'I am sorry, but I could not generate a response.';
   }
 );
+
+export async function vestaraGpt(input: VestaraGptInput): Promise<VestaraGptOutput> {
+  return await vestaraGptFlow(input);
+}

@@ -52,7 +52,7 @@ export default function VestaraGpt() {
     setIsLoading(true);
 
     try {
-        const botResponseText = await vestaraGpt(textToSend);
+        const botResponseText = await vestaraGpt({ query: textToSend });
         const botResponse: Message = { id: generateUniqueId(), text: botResponseText, sender: 'bot' };
         setMessages(prev => [...prev, botResponse]);
     } catch (error) {
