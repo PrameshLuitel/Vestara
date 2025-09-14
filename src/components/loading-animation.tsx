@@ -28,13 +28,7 @@ export default function LoadingAnimation() {
 
   useEffect(() => {
     const stepInterval = setInterval(() => {
-        setCurrentStep(prev => {
-            if (prev >= loadingSteps.length -1) {
-                clearInterval(stepInterval);
-                return loadingSteps.length -1;
-            }
-            return prev + 1;
-        })
+        setCurrentStep(prev => (prev + 1) % loadingSteps.length);
     }, 600); // Faster text changes
 
     return () => {

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -28,7 +29,7 @@ export default function RootLayout({
   }, []);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
         <title>Vestara: AI-Powered Investment Intelligence</title>
         <meta name="description" content="Unifying deep regulatory knowledge with predictive market analytics for Nepal's financial sector." />
