@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A RAG-based AI flow for Vestara GPT.
@@ -41,7 +42,7 @@ const vestaraGptPrompt = ai.definePrompt({
   system: systemPrompt,
   input: { schema: VestaraGptInputSchema },
   output: { schema: VestaraGptOutputSchema },
-  prompt: `The user's query is: {{{prompt}}}`,
+  prompt: `The user's query is: {{{jsonStringify this}}}`,
 });
 
 export async function vestaraGpt(query: VestaraGptInput): Promise<VestaraGptOutput> {
