@@ -4,9 +4,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send } from 'lucide-react';
+import { Send, LoaderCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { vestaraGpt } from '@/ai/flows/vestaraGptFlow';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface Message {
   id: string;
@@ -26,15 +29,17 @@ const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).subst
 export default function VestaraGpt() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (prompt?: string) => {
+  const handleSend = async (prompt?: string) => {
     const textToSend = prompt || input;
-    if (textToSend.trim() === '') return;
+    if (textToSend.trim() === '' || isLoading) return;
   
     const userMessage: Message = { id: generateUniqueId(), text: textToSend, sender: 'user' };
     
@@ -43,12 +48,25 @@ export default function VestaraGpt() {
         return [...currentMessages, userMessage];
     });
   
-    setTimeout(() => {
-        const botResponse: Message = { id: generateUniqueId(), text: `This interface is a demonstration. Your query received: "${textToSend}"`, sender: 'bot' };
-        setMessages(prev => [...prev, botResponse]);
-    }, 1000);
-  
     setInput('');
+    setIsLoading(true);
+
+    try {
+        const botResponseText = await vestaraGpt(textToSend);
+        const botResponse: Message = { id: generateUniqueId(), text: botResponseText, sender: 'bot' };
+        setMessages(prev => [...prev, botResponse]);
+    } catch (error) {
+        console.error("Error calling Vestara GPT:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to get a response from the AI. Please try again.",
+        });
+        // Optionally remove the user's message if the call fails
+        setMessages(prev => prev.filter(m => m.id !== userMessage.id));
+    } finally {
+        setIsLoading(false);
+    }
   };
   
 
@@ -88,13 +106,13 @@ export default function VestaraGpt() {
           <Input
             className="w-full h-12 pr-12 rounded-full"
             type="text"
-            placeholder="Vestara GPT is under development"
+            placeholder="Ask about Nepalese regulations, market operations, or financial terms..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled
+            disabled={isLoading}
           />
-          <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full" disabled>
-            <Send className="h-4 w-4" />
+          <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full" disabled={isLoading}>
+            {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>
       </div>
