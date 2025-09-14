@@ -64,7 +64,7 @@ export default function LoadingAnimation() {
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
-                <p className="mt-4 text-muted-foreground w-64 h-10 transition-all duration-300 ease-in-out">
+                <p className="mt-4 text-muted-foreground w-72 h-10 transition-all duration-300 ease-in-out">
                     {loadingSteps[currentStep]}
                 </p>
              </div>
