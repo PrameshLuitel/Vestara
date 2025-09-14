@@ -42,13 +42,36 @@ const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, titl
   );
 };
 
-const BentoMetric = ({ icon, value, label }: { icon: React.ReactNode, value: string, label: string }) => (
-    <div className="bg-background/30 p-4 rounded-lg flex flex-col items-center justify-center text-center backdrop-blur-sm border border-white/10">
-        {icon}
-        <p className="text-2xl font-bold font-headline mt-2 text-foreground">{value}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
-    </div>
-);
+const BentoMetric = ({ icon, value, label }: { icon: React.ReactNode, value: string, label: string }) => {
+    const cardRef = React.useRef<HTMLDivElement>(null);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!cardRef.current) return;
+        const { left, top, width, height } = cardRef.current.getBoundingClientRect();
+        const x = (e.clientX - left - width / 2) / (width / 2);
+        const y = (e.clientY - top - height / 2) / (height / 2);
+        cardRef.current.style.transform = `perspective(1000px) rotateY(${x * 15}deg) rotateX(${-y * 15}deg) scale3d(1.1, 1.1, 1.1)`;
+    };
+
+    const handleMouseLeave = () => {
+        if (!cardRef.current) return;
+        cardRef.current.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale3d(1, 1, 1)';
+    };
+
+    return (
+        <div
+            ref={cardRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            className="transition-transform duration-300 ease-out bg-background/30 p-4 rounded-lg flex flex-col items-center justify-center text-center backdrop-blur-sm border border-white/10"
+            style={{ transformStyle: 'preserve-3d' }}
+        >
+            {icon}
+            <p className="text-2xl font-bold font-headline mt-2 text-foreground">{value}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+        </div>
+    );
+};
 
 
 export default function Homepage() {
@@ -68,7 +91,6 @@ export default function Homepage() {
   return (
     <div className="flex flex-col items-center p-4 overflow-x-hidden">
       
-      {/* New Hero Section */}
       <div className="relative w-full h-[80vh] min-h-[600px] flex items-center justify-center rounded-lg overflow-hidden mb-24">
         <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-background mix-blend-multiply"></div>
@@ -98,14 +120,12 @@ export default function Homepage() {
         </div>
       </div>
 
-      {/* Features Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-5xl mb-24">
         {features.map((feature) => (
           <FeatureCard key={feature.name} icon={feature.icon} title={feature.name} description={feature.description} />
         ))}
       </div>
 
-      {/* Founder Section */}
       <div className="w-full max-w-5xl mb-24">
         <h2 className="text-3xl font-bold font-headline mb-8 text-center text-foreground">Founder & Lead Architect</h2>
         <Card className="bg-card/60 backdrop-blur-lg border-border/30 text-card-foreground shadow-lg">
