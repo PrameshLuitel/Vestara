@@ -1,0 +1,8 @@
+
+{
+  "functions": {
+    "src/app/api/vestara-gpt/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}

@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Send, LoaderCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { vestaraGpt } from '@/ai/flows/vestaraGptFlow';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -52,7 +51,22 @@ export default function VestaraGpt() {
     setIsLoading(true);
 
     try {
-        const botResponseText = await vestaraGpt({ query: textToSend });
+        const response = await fetch('/api/vestara-gpt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: textToSend }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'The API returned an error.');
+        }
+
+        const data = await response.json();
+        const botResponseText = data.response;
+
         const botResponse: Message = { id: generateUniqueId(), text: botResponseText, sender: 'bot' };
         setMessages(prev => [...prev, botResponse]);
     } catch (error) {

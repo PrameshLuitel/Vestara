@@ -4,9 +4,7 @@
  * This is used by both the Predictive Suite and the Vestara GPT AI tool.
  */
 
-// NOTE: This key is publicly exposed on the client-side in the original design of the Predictive Suite.
-// For a production application, this should be moved to a secure backend with proper authentication.
-const API_KEY = 'AIzaSyD56ax5a7x40wjfv6tW8wEmn6Z5PUuFZgg';
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
 const SPREADSHEET_ID = '1saWAgJlfvu22QSHI4_Fe8yenRVHHpsErVM7f3l4_Wjk';
 
 // Cache to avoid refetching the same data within a short period.
@@ -16,6 +14,13 @@ const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 export async function getLatestForecastData() {
     if (cache && (Date.now() - cache.timestamp < CACHE_DURATION_MS)) {
         return cache.data;
+    }
+
+    if (!API_KEY) {
+        const errorMessage = 'Google API key is not configured for the client. Please set NEXT_PUBLIC_GOOGLE_API_KEY in your Vercel environment variables.';
+        console.error(errorMessage);
+        // Return a structured error that the client component can gracefully handle
+        return { error: errorMessage };
     }
 
     try {
@@ -79,8 +84,6 @@ export async function getLatestForecastData() {
 
     } catch (error) {
         console.error('Error fetching forecast data:', error);
-        // Return an empty object or re-throw, depending on desired error handling.
-        // For the tool, returning an error message within the data is often better.
         return { error: (error as Error).message };
     }
 }

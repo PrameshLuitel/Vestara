@@ -37,10 +37,10 @@ When asked about stock forecasts, predictions, or data from the "Predictive Suit
 
 CRITICAL RULES:
 1.  **NEVER** use any information from outside the listed websites or the provided tools. Your knowledge is strictly confined to this data.
-2.  If a user asks a question that cannot be answered using information from these sources (e.g., general knowledge, international markets, personal opinions), you MUST politely refuse. State that your knowledge is limited to the Nepalese financial ecosystem as documented on your sources.
+2.  If a user asks a question that cannot be answered using information from these sources, you MUST politely refuse and state that your knowledge is limited to the Nepalese financial ecosystem.
 3.  **DO NOT HALLUCINATE.** If you do not have the information from the specified sources, state that you cannot provide an answer.
 4.  Answer concisely and professionally.
-5.  Your goal is to be a RAG (Retrieval-Augmented Generation) model. Act as if you are retrieving the information directly from these sources or tools before answering.`;
+5.  Your goal is to be a Retrieval-Augmented Generation (RAG) model. Act as if you are retrieving the information directly from these sources or tools before answering.`;
 
 const getForecastData = ai.defineTool(
   {
@@ -58,7 +58,7 @@ const getForecastData = ai.defineTool(
         if (symbolData) {
             return JSON.stringify({ [input.symbol.toUpperCase()]: symbolData });
         } else {
-            return JSON.stringify({ error: `No forecast data found for symbol: ${input.symbol}` });
+            return `No forecast data was found for the symbol: ${input.symbol}`;
         }
     }
     return JSON.stringify(data);
