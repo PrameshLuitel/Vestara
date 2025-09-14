@@ -75,20 +75,20 @@ export default function Homepage() {
             <div className="absolute top-1/2 left-1/2 h-[50rem] w-[50rem] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent/30 via-transparent to-transparent animate-[spin_20s_linear_infinite]"></div>
         </div>
 
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center max-w-6xl mx-auto px-4">
-            <div className="flex flex-col text-left">
-                <h1 className="text-5xl md:text-7xl font-bold font-headline mb-4 tracking-tighter text-foreground">
-                    Vestara<sup>AI</sup>
+        <div className="relative z-10 grid grid-cols-1 gap-8 items-center max-w-6xl mx-auto px-4 text-center">
+            <div className="flex flex-col">
+                <h1 className="text-6xl md:text-8xl font-bold font-headline mb-4 tracking-tighter text-foreground">
+                    Vestara<sup className="text-3xl md:text-5xl font-semibold -top-8">AI</sup>
                 </h1>
                 <p className="text-lg md:text-xl text-primary font-semibold font-headline mb-6">
                     The future of investment strategy, powered by proprietary AI.
                 </p>
-                <p className="text-base text-muted-foreground max-w-xl">
+                <p className="text-base text-muted-foreground max-w-xl mx-auto">
                     Project Vestara is an advanced AI-powered investment intelligence platform designed to redefine how financial professionals in Nepal access, interpret, and act on critical regulatory and market data.
                 </p>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
                 <BentoMetric icon={<TrendingUp className="h-6 w-6 text-green-500"/>} value="7-Day" label="Forecast Horizon" />
                 <BentoMetric icon={<BarChart2 className="h-6 w-6 text-blue-500"/>} value="8+" label="Predictive Models" />
                 <BentoMetric icon={<BookOpen className="h-6 w-6 text-orange-500"/>} value="6+" label="Regulatory Sources" />
