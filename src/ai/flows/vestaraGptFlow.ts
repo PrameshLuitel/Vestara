@@ -42,7 +42,7 @@ const vestaraGptPrompt = ai.definePrompt({
   system: systemPrompt,
   input: { schema: VestaraGptInputSchema },
   output: { schema: VestaraGptOutputSchema },
-  prompt: `The user's query is: {{{jsonStringify this}}}`,
+  prompt: `The user's query is: {{{this}}}`,
 });
 
 export async function vestaraGpt(query: VestaraGptInput): Promise<VestaraGptOutput> {
