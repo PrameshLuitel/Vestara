@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -76,7 +77,7 @@ export default function Homepage() {
         </div>
 
         <div className="relative z-10 grid grid-cols-1 gap-8 items-center max-w-6xl mx-auto px-4 text-center">
-            <div className="flex flex-col">
+            <div className="flex flex-col items-center">
                 <h1 className="text-6xl md:text-8xl font-bold font-headline mb-4 tracking-tighter text-foreground">
                     Vestara<sup className="text-3xl md:text-5xl font-semibold -top-8">AI</sup>
                 </h1>
