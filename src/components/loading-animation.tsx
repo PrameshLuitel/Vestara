@@ -20,29 +20,40 @@ const TOTAL_LOAD_TIME_MS = 12000;
 export default function LoadingAnimation() {
   const [progress, setProgress] = useState(0);
   const [currentStepText, setCurrentStepText] = useState(loadingSteps[0].text);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     const startTime = Date.now();
     
     const interval = setInterval(() => {
       const elapsedTime = Date.now() - startTime;
-      const currentProgress = Math.min(100, (elapsedTime / TOTAL_LOAD_TIME_MS) * 100);
+      setElapsed(elapsedTime);
+
+      if (elapsedTime >= TOTAL_LOAD_TIME_MS) {
+        setProgress(100);
+        setCurrentStepText(loadingSteps[loadingSteps.length - 1].text);
+        clearInterval(interval);
+        return;
+      }
+
+      const timeFraction = elapsedTime / TOTAL_LOAD_TIME_MS;
+      // Cubic ease-out function: starts fast, slows down. f(x) = 1 - (1-x)^3
+      const easedFraction = 1 - Math.pow(1 - timeFraction, 3);
+      const currentProgress = easedFraction * 100;
+      
       setProgress(currentProgress);
 
       const currentStep = loadingSteps.slice().reverse().find(step => currentProgress >= step.progress);
       if (currentStep) {
         setCurrentStepText(currentStep.text);
       }
-
-      if (currentProgress >= 100) {
-        clearInterval(interval);
-      }
-    }, 150);
+    }, 100); // Using a more frequent interval for a smoother animation
 
     return () => clearInterval(interval);
   }, []);
 
-  const estimatedTimeRemaining = Math.max(0, Math.ceil((TOTAL_LOAD_TIME_MS * (1 - progress / 100)) / 1000));
+  // Calculate remaining time based on actual elapsed time, not the eased progress value
+  const estimatedTimeRemaining = Math.max(0, Math.ceil((TOTAL_LOAD_TIME_MS - elapsed) / 1000));
 
   return (
     <div className="flex flex-col items-center justify-center text-center p-4 w-full h-[60vh]">
