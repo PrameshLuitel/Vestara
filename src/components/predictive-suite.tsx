@@ -13,9 +13,9 @@ import { Skeleton } from './ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
-import * as xlsx from 'xlsx';
 import LoadingAnimation from './loading-animation';
 import { getLatestForecastData } from '@/services/google-sheets';
+import { getHistoricalData } from '@/services/historical-data';
 
 const modelNames = ["LSTM", "Prophet", "XGBoost", "LightGBM", "Random Forest", "Linear Regression", "Exponential Smoothing"];
 const modelKeys: {[key: string]: string} = {
@@ -59,75 +59,6 @@ interface StockData {
     historical: { [symbol: string]: HistoricalPoint[] };
     forecast: { [symbol: string]: { [model: string]: ForecastPoint[] } };
 }
-
-// --- Data Fetching Logic (moved from API route) ---
-
-function getSheetName(daysAgo = 0) {
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}_${month}_${day}`;
-}
-
-async function getHistoricalData() {
-    const historicalUrl = 'https://omitnomis.github.io/ShareSansarScraper/Data/combined_excel.xlsx';
-    try {
-        const response = await fetch(historicalUrl);
-        if (!response.ok) throw new Error(`Failed to fetch historical data workbook. Status: ${response.status}`);
-        
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = xlsx.read(arrayBuffer, { type: 'buffer' });
-        
-        const data: { [symbol: string]: any[] } = {};
-        let daysChecked = 0;
-        const daysToPull = 10;
-
-        for (let i = 0; daysChecked < daysToPull && i < 30; i++) {
-            const sheetName = getSheetName(i);
-            const worksheet = workbook.Sheets[sheetName];
-            if (worksheet) {
-                const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
-                
-                jsonData.slice(1).forEach(row => {
-                    const symbol = row[1];
-                    if (symbol) {
-                        if (!data[symbol]) data[symbol] = [];
-                        data[symbol].push({
-                            date: sheetName.replace(/_/g, '-'),
-                            symbol: row[1],
-                            conf: row[2],
-                            open: row[3],
-                            high: row[4],
-                            low: row[5],
-                            close: row[6],
-                            ltp: row[7],
-                            vol: row[11],
-                            prevClose: row[12],
-                            turnover: row[13],
-                            trans: row[14],
-                            diff: row[15],
-                            range: row[16],
-                        });
-                    }
-                });
-                daysChecked++;
-            }
-        }
-        
-        for (const symbol in data) {
-            data[symbol].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        }
-        return data;
-    } catch (error) {
-        console.error('Error fetching historical data:', error);
-        throw error;
-    }
-}
-
-// --- End of Data Fetching Logic ---
-
 
 const chartConfigSingle = {
     historic: { label: "Historic", color: "hsl(var(--muted-foreground))" },
@@ -258,7 +189,7 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
 
 const AllModelsChart = ({ historicalData, forecastData }: { historicalData: HistoricalPoint[], forecastData: { [key: string]: ForecastPoint[] } }) => {
     const chartData = useMemo(() => {
-        let combinedData: any[] = historicalData.map(p => ({ date: p.date, historic: p.close }));
+        let combinedData: any[] = historicalData.map(p => ({ date: p.date, historic: p.close })).filter(p => p.historic && !isNaN(p.historic));
 
         const lastHistoric = combinedData.length > 0 ? combinedData[combinedData.length - 1] : null;
         if (!lastHistoric) return combinedData;
@@ -470,4 +401,3 @@ export default function PredictiveSuite() {
         </Card>
     );
 }
-

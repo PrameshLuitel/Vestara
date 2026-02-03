@@ -66,13 +66,20 @@ const getForecastData = ai.defineTool(
 );
 
 
-export async function vestaraGpt(input: VestaraGptInput): Promise<VestaraGptOutput> {
-  const llmResponse = await ai.generate({
-    model: 'googleai/gemini-2.5-flash',
-    system: systemPrompt,
-    prompt: `The user's query is: ${input.query}`,
-    tools: [getForecastData]
-  });
-
-  return llmResponse.text ?? 'I am sorry, but I could not generate a response.';
-}
+export const vestaraGpt = ai.defineFlow(
+  {
+    name: 'vestaraGptFlow',
+    inputSchema: VestaraGptInputSchema,
+    outputSchema: z.string(),
+  },
+  async (input) => {
+    const llmResponse = await ai.generate({
+      model: 'googleai/gemini-2.5-flash',
+      system: systemPrompt,
+      prompt: `The user's query is: ${input.query}`,
+      tools: [getForecastData]
+    });
+  
+    return llmResponse.text ?? 'I am sorry, but I could not generate a response.';
+  }
+);
