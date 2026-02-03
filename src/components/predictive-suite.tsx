@@ -86,7 +86,7 @@ const formatCurrency = (num: number | undefined | null) => {
 
 
 const MetricCard = ({ icon, title, value, footer }: { icon: React.ReactNode, title: string, value: string, footer?: string }) => (
-    <Card className="bg-card/50">
+    <Card className="bg-card/50 backdrop-blur-sm border-border/80">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             {icon}
@@ -169,7 +169,7 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
             </ChartContainer>
             
              {modelName.includes("Ensemble") && latestMetrics && (
-                 <Card className="mt-6 bg-card/50">
+                 <Card className="mt-6 bg-card/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center gap-2">
                         <Info className="h-5 w-5 text-primary" />
                         <CardTitle>Summary Analysis</CardTitle>

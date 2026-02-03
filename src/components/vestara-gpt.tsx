@@ -86,7 +86,7 @@ export default function VestaraGpt() {
 
   return (
     <div className="flex flex-col h-[70vh] max-w-4xl mx-auto w-full">
-      <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto pr-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="mb-4">
@@ -96,7 +96,7 @@ export default function VestaraGpt() {
             <p className="text-muted-foreground mb-8">Your AI assistant for the Nepalese financial market.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                 {examplePrompts.map(ex => (
-                    <button key={ex.title} className="text-left p-3 rounded-lg border border-border bg-card/50 hover:bg-accent hover:border-primary/50 transition-colors" onClick={() => handleSend(ex.prompt)}>
+                    <button key={ex.title} className="text-left p-4 rounded-lg border border-border bg-card/50 hover:bg-accent hover:border-primary/50 transition-colors backdrop-blur-sm" onClick={() => handleSend(ex.prompt)}>
                         <p className="font-semibold text-sm">{ex.title}</p>
                         <p className="text-xs text-muted-foreground">{ex.prompt}</p>
                     </button>
@@ -107,8 +107,8 @@ export default function VestaraGpt() {
           <div className="space-y-8">
             {messages.map((message) => (
               <div key={message.id} className={cn('flex items-start gap-3', message.sender === 'user' ? 'justify-end' : 'justify-start')}>
-                {message.sender === 'bot' && <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center"><Sparkles className="w-5 h-5 text-primary"/></div>}
-                <div className={cn('rounded-lg px-4 py-2 max-w-[85%]', message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary')}>
+                {message.sender === 'bot' && <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/50"><Sparkles className="w-5 h-5 text-primary"/></div>}
+                <div className={cn('rounded-lg px-4 py-3 max-w-[85%] shadow-md', message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground')}>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
                 </div>
               </div>
@@ -120,7 +120,7 @@ export default function VestaraGpt() {
       <div className="mt-6">
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="relative">
           <Input
-            className="w-full h-12 pr-14 pl-5 rounded-full bg-secondary"
+            className="w-full h-12 pr-14 pl-5 rounded-full bg-secondary text-base"
             type="text"
             placeholder="Ask about Nepalese regulations, market operations, or financial terms..."
             value={input}

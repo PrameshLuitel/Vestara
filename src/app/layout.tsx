@@ -61,11 +61,11 @@ export default function RootLayout({
               <main className="flex-grow">
                 {children}
               </main>
-              <footer className="w-full py-4 px-8 text-center">
+              <footer className="w-full py-2 px-4 text-center border-t border-border/50">
                 <p className="text-xs text-muted-foreground mb-1">
                   Status: Under active development. Planned Launch: Q2 2026.
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground/80">
                   The Predictive Suite and Vestara GPT are AI-powered. Information is for educational and research purposes only; it is not financial advice.
                 </p>
               </footer>
