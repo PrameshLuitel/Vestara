@@ -6,30 +6,8 @@ import { BrainCircuit, Bot, TrendingUp, BarChart2, BookOpen } from "lucide-react
 import React from "react";
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => {
-  const cardRef = React.useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const { left, top, width, height } = cardRef.current.getBoundingClientRect();
-    const x = (e.clientX - left - width / 2) / (width / 2);
-    const y = (e.clientY - top - height / 2) / (height / 2);
-    cardRef.current.style.transform = `perspective(1000px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg) scale3d(1.05, 1.05, 1.05)`;
-  };
-
-  const handleMouseLeave = () => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale3d(1, 1, 1)';
-  };
-
   return (
-    <div
-      ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="transition-transform duration-300 ease-out"
-      style={{ transformStyle: 'preserve-3d' }}
-    >
-      <Card className="text-left bg-card/60 backdrop-blur-lg border-border/30 text-card-foreground transition-all flex flex-col h-full shadow-lg hover:shadow-primary/20">
+      <Card className="text-left bg-card/60 backdrop-blur-lg border-border text-card-foreground transition-all flex flex-col h-full shadow-lg hover:border-primary/50 hover:shadow-primary/20">
         <CardHeader className="flex flex-row items-start justify-between pb-4">
           <CardTitle className="text-lg font-medium text-card-foreground pr-4">{title}</CardTitle>
           {icon}
@@ -38,33 +16,13 @@ const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, titl
           <p className="text-sm text-muted-foreground">{description}</p>
         </CardContent>
       </Card>
-    </div>
   );
 };
 
 const BentoMetric = ({ icon, value, label }: { icon: React.ReactNode, value: string, label: string }) => {
-    const cardRef = React.useRef<HTMLDivElement>(null);
-
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!cardRef.current) return;
-        const { left, top, width, height } = cardRef.current.getBoundingClientRect();
-        const x = (e.clientX - left - width / 2) / (width / 2);
-        const y = (e.clientY - top - height / 2) / (height / 2);
-        cardRef.current.style.transform = `perspective(1000px) rotateY(${x * 15}deg) rotateX(${-y * 15}deg) scale3d(1.1, 1.1, 1.1)`;
-    };
-
-    const handleMouseLeave = () => {
-        if (!cardRef.current) return;
-        cardRef.current.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) scale3d(1, 1, 1)';
-    };
-
     return (
         <div
-            ref={cardRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            className="transition-transform duration-300 ease-out bg-background/30 p-4 rounded-lg flex flex-col items-center justify-center text-center backdrop-blur-sm border border-white/10"
-            style={{ transformStyle: 'preserve-3d' }}
+            className="transition-transform duration-300 ease-out bg-card/60 border border-border hover:border-primary/50 p-4 rounded-lg flex flex-col items-center justify-center text-center backdrop-blur-sm"
         >
             {icon}
             <p className="text-2xl font-bold font-headline mt-2 text-foreground">{value}</p>
@@ -91,17 +49,14 @@ export default function Homepage() {
   return (
     <div className="flex flex-col items-center p-4 overflow-x-hidden">
       
-      <div className="relative w-full h-[80vh] min-h-[600px] flex items-center justify-center rounded-lg overflow-hidden mb-24">
-        <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-background mix-blend-multiply"></div>
-            <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/30 to-transparent to-70% animate-[pulse_10s_cubic-bezier(0.4,0,0.6,1)_infinite]"></div>
-            <div className="absolute top-1/2 left-1/2 h-[50rem] w-[50rem] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent/30 via-transparent to-transparent animate-[spin_20s_linear_infinite]"></div>
-        </div>
+      <div className="relative w-full h-[70vh] min-h-[500px] flex items-center justify-center rounded-lg overflow-hidden mb-24">
+         <div className="absolute inset-0 z-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-400/[0.05] dark:bg-bottom dark:border-b dark:border-slate-100/5" style={{ maskImage: 'linear-gradient(to_bottom, transparent, black, transparent)'}}></div>
+        <div className="absolute inset-0 z-0 bg-background" style={{ maskImage: 'radial-gradient(ellipse_at_center,transparent_30%,black_100%)' }}></div>
 
         <div className="relative z-10 grid grid-cols-1 gap-8 items-center max-w-6xl mx-auto px-4 text-center">
             <div className="flex flex-col items-center">
-                <h1 className="text-6xl md:text-8xl font-bold font-headline mb-4 tracking-tighter text-foreground">
-                    Vestara<sup className="text-3xl md:text-5xl font-semibold -top-8">AI</sup>
+                <h1 className="text-5xl md:text-7xl font-bold font-headline mb-4 tracking-tighter text-foreground">
+                    Vestara<sup className="text-2xl md:text-4xl font-semibold -top-8 text-primary">AI</sup>
                 </h1>
                 <p className="text-lg md:text-xl text-primary font-semibold font-headline mb-6">
                     The future of investment strategy, powered by proprietary AI.
@@ -112,10 +67,10 @@ export default function Homepage() {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
-                <BentoMetric icon={<TrendingUp className="h-6 w-6 text-green-500"/>} value="7-Day" label="Forecast Horizon" />
-                <BentoMetric icon={<BarChart2 className="h-6 w-6 text-blue-500"/>} value="8+" label="Predictive Models" />
-                <BentoMetric icon={<BookOpen className="h-6 w-6 text-orange-500"/>} value="6+" label="Regulatory Sources" />
-                <BentoMetric icon={<Bot className="h-6 w-6 text-purple-500"/>} value="RAG" label="AI Architecture" />
+                <BentoMetric icon={<TrendingUp className="h-6 w-6 text-primary"/>} value="7-Day" label="Forecast Horizon" />
+                <BentoMetric icon={<BarChart2 className="h-6 w-6 text-primary"/>} value="8+" label="Predictive Models" />
+                <BentoMetric icon={<BookOpen className="h-6 w-6 text-primary"/>} value="6+" label="Regulatory Sources" />
+                <BentoMetric icon={<Bot className="h-6 w-6 text-primary"/>} value="RAG" label="AI Architecture" />
             </div>
         </div>
       </div>
@@ -128,7 +83,7 @@ export default function Homepage() {
 
       <div className="w-full max-w-5xl mb-24">
         <h2 className="text-3xl font-bold font-headline mb-8 text-center text-foreground">Founder & Lead Architect</h2>
-        <Card className="bg-card/60 backdrop-blur-lg border-border/30 text-card-foreground shadow-lg">
+        <Card className="bg-card border-border text-card-foreground shadow-lg">
           <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-1">
                 <h3 className="font-bold text-lg text-primary font-headline">A Vision for Modern Finance</h3>
@@ -144,9 +99,9 @@ export default function Homepage() {
 
        <div className="w-full max-w-5xl text-center">
           <h2 className="text-3xl font-bold font-headline mb-6 text-foreground">Launch Information</h2>
-           <Card className="inline-block bg-card/60 backdrop-blur-lg border-border/30 text-card-foreground p-6 shadow-lg">
+           <Card className="inline-block bg-card border-border text-card-foreground p-6 shadow-lg">
               <p className="text-muted-foreground"><span className="font-semibold text-foreground">Status:</span> The platform is currently under active development.</p>
-              <p className="text-muted-foreground"><span className="font-semibold text-foreground">Planned Launch:</span> The official launch is planned for Q3 2025. Stay tuned for updates.</p>
+              <p className="text-muted-foreground"><span className="font-semibold text-foreground">Planned Launch:</span> The official launch is planned for Q2 2026. Stay tuned for updates.</p>
            </Card>
       </div>
 

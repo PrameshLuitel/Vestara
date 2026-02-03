@@ -11,11 +11,11 @@ export default function Home() {
       <div className="flex-1">
         <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <Tabs defaultValue="home" className="w-full">
-            <div className="flex justify-center mb-8">
-              <TabsList className="grid w-full max-w-md grid-cols-3 bg-secondary border-border text-secondary-foreground">
-                <TabsTrigger value="home" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Home</TabsTrigger>
-                <TabsTrigger value="predictive-suite" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Predictive Suite</TabsTrigger>
-                <TabsTrigger value="vestara-gpt" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Vestara Gpt</TabsTrigger>
+            <div className="flex justify-center mb-8 border-b border-border/50">
+              <TabsList className="bg-transparent p-0 h-12">
+                <TabsTrigger value="home" className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6">Home</TabsTrigger>
+                <TabsTrigger value="predictive-suite" className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6">Predictive Suite</TabsTrigger>
+                <TabsTrigger value="vestara-gpt" className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6">Vestara Gpt</TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="home">

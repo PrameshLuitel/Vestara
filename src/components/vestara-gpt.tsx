@@ -4,10 +4,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, LoaderCircle } from 'lucide-react';
+import { Send, LoaderCircle, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import Logo from './logo';
 
 
 interface Message {
@@ -43,7 +44,7 @@ export default function VestaraGpt() {
     const userMessage: Message = { id: generateUniqueId(), text: textToSend, sender: 'user' };
     
     setMessages(prev => {
-        const currentMessages = prev.length > 0 ? prev : [{ id: generateUniqueId(), text: "I am Vestara GPT, your real-time regulatory and strategy assistant. Trained on SEBON and NEPSE regulations and the workflows of investment banking in Nepal, I provide precise, context-aware answers. How can I assist?", sender: 'bot' }];
+        const currentMessages = prev.length > 0 ? prev : [];
         return [...currentMessages, userMessage];
     });
   
@@ -76,7 +77,6 @@ export default function VestaraGpt() {
             title: "Error",
             description: "Failed to get a response from the AI. Please try again.",
         });
-        // Optionally remove the user's message if the call fails
         setMessages(prev => prev.filter(m => m.id !== userMessage.id));
     } finally {
         setIsLoading(false);
@@ -86,27 +86,29 @@ export default function VestaraGpt() {
 
   return (
     <div className="flex flex-col h-[70vh] max-w-4xl mx-auto w-full">
-      <div className="flex-1 overflow-y-auto pr-4">
+      <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="mb-4">
+              <Logo className="h-12 w-12 text-primary" />
+            </div>
             <h1 className="text-4xl font-bold font-headline mb-2">Vestara GPT</h1>
-            <p className="text-muted-foreground mb-8">The Domain-Trained AI Assistant for Nepal's financial ecosystem.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
+            <p className="text-muted-foreground mb-8">Your AI assistant for the Nepalese financial market.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                 {examplePrompts.map(ex => (
-                    <Card key={ex.title} className="hover:bg-accent transition-colors cursor-pointer text-left" onClick={() => handleSend(ex.prompt)}>
-                        <CardHeader>
-                            <CardTitle className="text-base">{ex.title}</CardTitle>
-                            <CardDescription className="text-sm">{ex.prompt}</CardDescription>
-                        </CardHeader>
-                    </Card>
+                    <button key={ex.title} className="text-left p-3 rounded-lg border border-border bg-card/50 hover:bg-accent hover:border-primary/50 transition-colors" onClick={() => handleSend(ex.prompt)}>
+                        <p className="font-semibold text-sm">{ex.title}</p>
+                        <p className="text-xs text-muted-foreground">{ex.prompt}</p>
+                    </button>
                 ))}
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {messages.map((message) => (
-              <div key={message.id} className={cn('flex', message.sender === 'user' ? 'justify-end' : 'justify-start')}>
-                <div className={cn('rounded-lg px-4 py-3 max-w-[80%]', message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+              <div key={message.id} className={cn('flex items-start gap-3', message.sender === 'user' ? 'justify-end' : 'justify-start')}>
+                {message.sender === 'bot' && <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center"><Sparkles className="w-5 h-5 text-primary"/></div>}
+                <div className={cn('rounded-lg px-4 py-2 max-w-[85%]', message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary')}>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
                 </div>
               </div>
@@ -118,15 +120,15 @@ export default function VestaraGpt() {
       <div className="mt-6">
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="relative">
           <Input
-            className="w-full h-12 pr-12 rounded-full"
+            className="w-full h-12 pr-14 pl-5 rounded-full bg-secondary"
             type="text"
             placeholder="Ask about Nepalese regulations, market operations, or financial terms..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
           />
-          <Button type="submit" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full" disabled={isLoading}>
-            {isLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <Button type="submit" size="icon" className="absolute right-2.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full" disabled={isLoading || !input}>
+            {isLoading ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
           </Button>
         </form>
       </div>

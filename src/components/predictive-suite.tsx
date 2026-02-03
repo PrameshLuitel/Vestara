@@ -71,7 +71,7 @@ const chartConfigAll = {
     XGBoost: { label: "XGBoost", color: "hsl(var(--chart-3))" },
     LightGBM: { label: "LightGBM", color: "hsl(var(--chart-4))" },
     RandomForest: { label: "RandomForest", color: "hsl(var(--chart-5))" },
-    Linear: { label: "Linear", color: "hsl(262, 80%, 50%)" },
+    Linear: { label: "Linear", color: "hsl(300 80% 60%)" },
     ExpSmoothing: { label: "ExpSmoothing", color: "hsl(var(--foreground))" },
 };
 
@@ -86,7 +86,7 @@ const formatCurrency = (num: number | undefined | null) => {
 
 
 const MetricCard = ({ icon, title, value, footer }: { icon: React.ReactNode, title: string, value: string, footer?: string }) => (
-    <Card>
+    <Card className="bg-card/50">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             {icon}
@@ -160,7 +160,7 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
                     </defs>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8}tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
-                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} hide />
+                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} axisLine={false} tickLine={false} tickFormatter={(value) => `रू${value}`} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <ChartLegend content={<ChartLegendContent />} />
                     <Area type="monotone" dataKey="historic" stroke="var(--color-historic)" fillOpacity={1} fill="url(#colorHistoric)" strokeWidth={2} connectNulls />
@@ -169,9 +169,9 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
             </ChartContainer>
             
              {modelName.includes("Ensemble") && latestMetrics && (
-                 <Card className="mt-6">
+                 <Card className="mt-6 bg-card/50">
                     <CardHeader className="flex flex-row items-center gap-2">
-                        <Info className="h-5 w-5" />
+                        <Info className="h-5 w-5 text-primary" />
                         <CardTitle>Summary Analysis</CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -229,7 +229,7 @@ const AllModelsChart = ({ historicalData, forecastData }: { historicalData: Hist
                 <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(tick) => new Date(tick).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
-                    <YAxis domain={['dataMin - 20', 'dataMax + 20']} hide />
+                    <YAxis domain={['dataMin - 20', 'dataMax + 20']} axisLine={false} tickLine={false} tickFormatter={(value) => `रू${value}`} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <ChartLegend content={<ChartLegendContent />} />
                     <Line type="monotone" dataKey="historic" stroke="var(--color-historic)" strokeWidth={2} dot={false} />
@@ -313,25 +313,25 @@ export default function PredictiveSuite() {
     }
 
     return (
-        <Card>
+        <Card className="bg-transparent border-0 shadow-none">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <CardTitle className="font-headline text-2xl">Predictive Analysis for {selectedStock}</CardTitle>
+                        <CardTitle className="font-headline text-3xl">Predictive Analysis for {selectedStock}</CardTitle>
                         <CardDescription>Historical data and 7-day future price predictions using various AI models.</CardDescription>
                     </div>
                     <div className="w-full sm:w-auto flex flex-col gap-2">
                         <div className="relative">
-                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
                                 placeholder="Search symbol..."
-                                className="w-full sm:w-[180px] pl-8"
+                                className="w-full sm:w-[200px] pl-9"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <Select onValueChange={(value) => { setSelectedStock(value); setSearchQuery(value); }} value={selectedStock} disabled={symbols.length === 0}>
-                            <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectTrigger className="w-full sm:w-[200px]">
                                 <SelectValue placeholder="Select a stock" />
                             </SelectTrigger>
                             <SelectContent>
@@ -347,8 +347,8 @@ export default function PredictiveSuite() {
             </CardHeader>
             <CardContent>
                  {loading && !allData ? (
-                    <div className="text-center p-8">
-                        <p>Loading initial data...</p>
+                     <div className="flex items-center justify-center h-[40vh]">
+                        <LoadingAnimation />
                     </div>
                  ) : error ? (
                     <Alert variant="destructive">
@@ -366,34 +366,34 @@ export default function PredictiveSuite() {
                             </div>
                         )}
                         <Tabs defaultValue="all-models" className="w-full">
-                            <div className="overflow-x-auto pb-2">
-                                <TabsList>
-                                    <TabsTrigger value="all-models">All Models</TabsTrigger>
-                                    <TabsTrigger value="ensemble-mean">Ensemble Mean</TabsTrigger>
-                                    <TabsTrigger value="ensemble-median">Ensemble Median</TabsTrigger>
+                            <div className="overflow-x-auto pb-2 border-b border-border">
+                                <TabsList className="bg-transparent p-0">
+                                    <TabsTrigger value="all-models" className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">All Models</TabsTrigger>
+                                    <TabsTrigger value="ensemble-mean" className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">Ensemble Mean</TabsTrigger>
+                                    <TabsTrigger value="ensemble-median" className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">Ensemble Median</TabsTrigger>
                                     {modelNames.map(modelName => (
-                                        <TabsTrigger key={modelName} value={modelName}>{modelName}</TabsTrigger>
+                                        <TabsTrigger key={modelName} value={modelName} className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">{modelName}</TabsTrigger>
                                     ))}
                                 </TabsList>
                             </div>
-                             <TabsContent value="all-models" className="mt-4">
+                             <TabsContent value="all-models" className="mt-6">
                                 <AllModelsChart historicalData={currentStockData.historical} forecastData={currentStockData.forecast} />
                             </TabsContent>
-                             <TabsContent value="ensemble-mean" className="mt-4">
+                             <TabsContent value="ensemble-mean" className="mt-6">
                                 <ModelChart modelName="Ensemble Mean" historicalData={currentStockData.historical} forecastData={currentStockData.forecast} latestMetrics={currentStockData.latestMetrics} />
                             </TabsContent>
-                            <TabsContent value="ensemble-median" className="mt-4">
+                            <TabsContent value="ensemble-median" className="mt-6">
                                 <ModelChart modelName="Ensemble Median" historicalData={currentStockData.historical} forecastData={currentStockData.forecast} latestMetrics={currentStockData.latestMetrics} />
                             </TabsContent>
                             {modelNames.map(modelName => (
-                                <TabsContent key={modelName} value={modelName} className="mt-4">
+                                <TabsContent key={modelName} value={modelName} className="mt-6">
                                     <ModelChart modelName={modelName} historicalData={currentStockData.historical} forecastData={currentStockData.forecast} latestMetrics={currentStockData.latestMetrics} />
                                 </TabsContent>
                             ))}
                         </Tabs>
                     </>
                 ) : (
-                    <div className="text-center p-8">
+                     <div className="flex items-center justify-center h-[40vh]">
                         <p>No data available for {selectedStock}. Please select another stock.</p>
                     </div>
                 )}
