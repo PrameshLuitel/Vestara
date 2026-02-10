@@ -265,6 +265,10 @@ export default function PredictiveSuite() {
                     getHistoricalData(),
                     getLatestForecastData(),
                 ]);
+
+                if (forecast && (forecast as any).error) {
+                    throw new Error((forecast as any).error);
+                }
                 
                 const stockSymbols = Object.keys(historical || {}).sort();
                 setSymbols(stockSymbols);
