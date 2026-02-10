@@ -1,16 +1,28 @@
 
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Bot, BrainCircuit, TrendingUp, BarChart2, BookOpen, User } from "lucide-react";
+import { CardContent } from "@/components/ui/card";
+import { Bot, BrainCircuit, TrendingUp, BarChart2, BookOpen } from "lucide-react";
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
+const GlassmorphicCard = ({ children, className }: { children: React.ReactNode, className?: string }) => {
+  return (
+    <div className={cn(
+      "rounded-2xl border border-white/10 bg-card/10 text-card-foreground shadow-2xl shadow-black/20",
+      "backdrop-blur-lg transition-all duration-300",
+      "hover:border-white/20 hover:shadow-primary/10",
+      className
+    )}>
+      {children}
+    </div>
+  );
+};
+
 const FeatureCard = ({ icon, title, description, className }: { icon: React.ReactNode, title: string, description: string, className?: string }) => {
   return (
-      <div className={cn("rounded-xl border border-border bg-card/50 text-card-foreground shadow-lg transition-all duration-300 hover:border-primary/70 hover:shadow-primary/20 hover:-translate-y-1.5 relative overflow-hidden p-6 flex flex-col h-full backdrop-blur-sm", className)}>
-        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+      <GlassmorphicCard className={cn("relative overflow-hidden p-6 flex flex-col h-full group", className)}>
         <div className="relative z-10 flex items-center gap-4 mb-4">
             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                 {icon}
@@ -18,22 +30,22 @@ const FeatureCard = ({ icon, title, description, className }: { icon: React.Reac
             <h3 className="text-lg font-bold font-headline text-foreground">{title}</h3>
         </div>
         <p className="relative z-10 text-sm text-muted-foreground flex-grow">{description}</p>
-        <div className="absolute -bottom-12 -right-12 text-primary/5 opacity-50">
+        <div className="absolute -bottom-12 -right-12 text-primary/10 opacity-50 transition-transform duration-500 group-hover:scale-110">
             {React.cloneElement(icon as React.ReactElement, { className: "w-36 h-36" })}
         </div>
-      </div>
+      </GlassmorphicCard>
   );
 };
 
 const BentoMetric = ({ icon, value, label }: { icon: React.ReactNode, value: string, label: string }) => {
     return (
-        <div
-            className="transition-transform duration-300 ease-out bg-card/50 border border-border/80 hover:border-primary/70 p-4 rounded-xl flex flex-col items-center justify-center text-center backdrop-blur-sm hover:-translate-y-1.5"
+        <GlassmorphicCard
+            className="transition-transform duration-300 ease-out p-4 flex flex-col items-center justify-center text-center hover:-translate-y-1.5"
         >
             {icon}
             <p className="text-3xl font-bold font-headline mt-2 text-foreground">{value}</p>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
-        </div>
+        </GlassmorphicCard>
     );
 };
 
@@ -41,7 +53,7 @@ const BentoMetric = ({ icon, value, label }: { icon: React.ReactNode, value: str
 export default function Homepage() {
   return (
     <div className="space-y-16">
-      <div className="text-center">
+      <div className="text-center pt-12">
         <h1 className="text-5xl md:text-7xl font-bold font-headline mb-4 tracking-tighter text-foreground">
             Vestara<sup className="text-3xl md:text-5xl font-semibold -top-8 text-primary">AI</sup>
         </h1>
@@ -80,7 +92,7 @@ export default function Homepage() {
 
       <div className="w-full max-w-5xl mx-auto">
         <h2 className="text-3xl font-bold font-headline mb-8 text-center text-foreground">Founder & Lead Architect</h2>
-        <Card className="bg-card/50 border border-border/80 text-card-foreground shadow-xl backdrop-blur-sm overflow-hidden">
+        <GlassmorphicCard>
           <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-8 items-center">
             <div className="md:col-span-1 flex flex-col items-center text-center">
                 <Avatar className="h-28 w-28 mb-4 border-2 border-primary/50">
@@ -95,7 +107,7 @@ export default function Homepage() {
                 <p>My published papers on sentiment-enhanced stock prediction and AI-driven insights for NEPSE are the very foundation of Vestara's predictive framework. I personally architected the proprietary Large Language Model (LLM) and pioneered the reinforcement learning framework with finance experts.</p>
             </div>
           </CardContent>
-        </Card>
+        </GlassmorphicCard>
       </div>
     </div>
   );

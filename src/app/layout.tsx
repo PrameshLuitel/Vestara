@@ -57,11 +57,14 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <div className="flex flex-col min-h-screen animate-fade-in">
+            <div className="flex flex-col min-h-screen animate-fade-in relative">
+              <div className="absolute top-0 -z-10 h-full w-full bg-background">
+                <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
+              </div>
               <main className="flex-grow">
                 {children}
               </main>
-              <footer className="w-full py-2 px-4 text-center border-t border-border/50">
+              <footer className="w-full py-2 px-4 text-center border-t border-white/10 bg-background/50 backdrop-blur-sm">
                 <p className="text-xs text-muted-foreground mb-1">
                   Status: Under active development. Planned Launch: Q2 2026.
                 </p>

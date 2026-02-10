@@ -2,14 +2,13 @@
 
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from 'react';
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { Area, AreaChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info, Briefcase, BarChart, Clock, Hash, Search } from 'lucide-react';
-import { Skeleton } from './ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
@@ -86,16 +85,16 @@ const formatCurrency = (num: number | undefined | null) => {
 
 
 const MetricCard = ({ icon, title, value, footer }: { icon: React.ReactNode, title: string, value: string, footer?: string }) => (
-    <Card className="bg-card/50 backdrop-blur-sm border-border/80">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+    <div className="rounded-2xl border border-white/10 bg-card/10 p-4 text-card-foreground shadow-lg backdrop-blur-lg transition-all duration-300 hover:border-white/20 hover:shadow-primary/10">
+        <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium">{title}</h3>
             {icon}
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div>
             <div className="text-2xl font-bold">{value}</div>
             {footer && <p className="text-xs text-muted-foreground">{footer}</p>}
-        </CardContent>
-    </Card>
+        </div>
+    </div>
 )
 
 const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: { modelName: string, historicalData: HistoricalPoint[], forecastData: { [key: string]: ForecastPoint[] }, latestMetrics: LatestMetrics | null }) => {
@@ -169,19 +168,19 @@ const ModelChart = ({ modelName, historicalData, forecastData, latestMetrics }: 
             </ChartContainer>
             
              {modelName.includes("Ensemble") && latestMetrics && (
-                 <Card className="mt-6 bg-card/50 backdrop-blur-sm">
-                    <CardHeader className="flex flex-row items-center gap-2">
+                 <div className="mt-6 rounded-2xl border border-white/10 bg-card/10 p-6 text-card-foreground shadow-lg backdrop-blur-lg">
+                    <div className="flex flex-row items-center gap-2 mb-2">
                         <Info className="h-5 w-5 text-primary" />
-                        <CardTitle>Summary Analysis</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                        <h3 className="text-lg font-semibold">Summary Analysis</h3>
+                    </div>
+                    <div>
                         <p className="text-muted-foreground">
                             The aggregated {modelName.toLowerCase()} forecast suggests a {changeType === 'up' ? 'positive' : changeType === 'down' ? 'negative' : 'stable'} outlook.
                             The consensus points towards a price of approximately {formatCurrency(lastPrediction)} in the next 7 days.
                             This represents a potential {changeType !== 'neutral' ? `${percentageChange.toFixed(2)}%` : ''} change from the last known price of {formatCurrency(latestMetrics.close)}.
                         </p>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
              )}
         </div>
     );
@@ -311,8 +310,8 @@ export default function PredictiveSuite() {
     }
 
     return (
-        <Card className="bg-transparent border-0 shadow-none">
-            <CardHeader>
+        <div className="rounded-2xl border border-white/10 bg-card/10 p-6 text-card-foreground shadow-2xl shadow-black/20 backdrop-blur-lg">
+            <CardHeader className="p-0 mb-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <CardTitle className="font-headline text-3xl">Predictive Analysis for {selectedStock}</CardTitle>
@@ -323,16 +322,16 @@ export default function PredictiveSuite() {
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
                                 placeholder="Search symbol..."
-                                className="w-full sm:w-[200px] pl-9"
+                                className="w-full sm:w-[200px] pl-9 bg-black/20 border-white/10 focus:bg-black/30"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <Select onValueChange={(value) => { setSelectedStock(value); setSearchQuery(value); }} value={selectedStock} disabled={symbols.length === 0}>
-                            <SelectTrigger className="w-full sm:w-[200px]">
+                            <SelectTrigger className="w-full sm:w-[200px] bg-black/20 border-white/10 focus:bg-black/30">
                                 <SelectValue placeholder="Select a stock" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-card/50 backdrop-blur-xl border-white/10">
                                 {filteredSymbols.length > 0 ? (
                                     filteredSymbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)
                                 ) : (
@@ -343,13 +342,13 @@ export default function PredictiveSuite() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
                  {loading && !allData ? (
                      <div className="flex items-center justify-center h-[40vh]">
                         <LoadingAnimation />
                     </div>
                  ) : error ? (
-                    <Alert variant="destructive">
+                    <Alert variant="destructive" className="bg-destructive/20 border-destructive/50 text-destructive-foreground">
                       <AlertTitle>Error Fetching Data</AlertTitle>
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
@@ -364,7 +363,7 @@ export default function PredictiveSuite() {
                             </div>
                         )}
                         <Tabs defaultValue="all-models" className="w-full">
-                            <div className="overflow-x-auto pb-2 border-b border-border">
+                            <div className="overflow-x-auto pb-2 border-b border-white/10">
                                 <TabsList className="bg-transparent p-0">
                                     <TabsTrigger value="all-models" className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">All Models</TabsTrigger>
                                     <TabsTrigger value="ensemble-mean" className="bg-transparent text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">Ensemble Mean</TabsTrigger>
@@ -396,6 +395,6 @@ export default function PredictiveSuite() {
                     </div>
                 )}
             </CardContent>
-        </Card>
+        </div>
     );
 }
