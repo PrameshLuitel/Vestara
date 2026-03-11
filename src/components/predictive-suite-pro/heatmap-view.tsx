@@ -9,6 +9,7 @@ import MiniSparkline from './mini-sparkline';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getTileColor, formatCurrency } from './utils';
+import { Badge } from '../ui/badge';
 
 interface HeatmapViewProps {
   stocks: FullStockData[];
