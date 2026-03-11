@@ -10,8 +10,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)'],
+        sans: ['var(--font-sans)'],
+        mono: ['var(--font-mono)'],
         headline: ['var(--font-space-grotesk)'],
+        bricolage: ['var(--font-sans)'], // using main sans for bricolage
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -47,6 +49,11 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        
+        up: 'hsl(var(--up))',
+        down: 'hsl(var(--down))',
+        neutral: 'hsl(var(--neutral))',
+
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -89,10 +96,16 @@ export default {
             height: '0',
           },
         },
+        'shimmer': {
+          '100%': {
+            transform: 'translateX(100%)',
+          },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'shimmer': 'shimmer 1.5s infinite',
       },
     },
   },

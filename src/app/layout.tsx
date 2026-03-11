@@ -6,17 +6,18 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import SplashScreen from '@/components/splash-screen';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Bricolage_Grotesque, DM_Mono } from 'next/font/google';
 import { cn } from '@/lib/utils';
 
-const fontInter = Inter({
+const fontSans = Bricolage_Grotesque({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-sans',
 });
 
-const fontSpaceGrotesk = Space_Grotesk({
+const fontMono = DM_Mono({
   subsets: ['latin'],
-  variable: '--font-space-grotesk',
+  variable: '--font-mono',
+  weight: ['300', '400', '500'],
 });
 
 
@@ -47,7 +48,7 @@ export default function RootLayout({
         <title>Vestara: AI-Powered Investment Intelligence</title>
         <meta name="description" content="Unifying deep regulatory knowledge with predictive market analytics for Nepal's financial sector." />
       </head>
-      <body className={cn("font-sans antialiased", fontInter.variable, fontSpaceGrotesk.variable)}>
+      <body className={cn("font-sans antialiased", fontSans.variable, fontMono.variable)}>
         {loading ? (
           <SplashScreen />
         ) : (
@@ -58,9 +59,6 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <div className="flex flex-col min-h-screen animate-fade-in relative">
-              <div className="absolute top-0 -z-10 h-full w-full bg-background">
-                <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
-              </div>
               <main className="flex-grow">
                 {children}
               </main>
